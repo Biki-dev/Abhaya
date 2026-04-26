@@ -98,7 +98,6 @@ export default function HomeMapScreen({ navigation }: any) {
   const mapWebViewRef      = useRef<WebView>(null);
   // ── Edge Impulse WebView refs ─────────────────────────────────────────────
   const eiWebViewRef       = useRef<EIWebViewHandle>(null);
-  const helpWebViewRef     = useRef<EIWebViewHandle>(null);
 
   const prevMotion = useRef({ isFalling: false, impactDetected: false, isShaking: false, shakeCount: 0 });
   const pPeak      = useRef(false);
@@ -117,9 +116,8 @@ export default function HomeMapScreen({ navigation }: any) {
   }, [userId, userLocation]);
 
   // ── Edge Impulse hook ─────────────────────────────────────────────────────
-  const webViewRefs = useMemo(() => [eiWebViewRef, helpWebViewRef], []);
   const { state: keywordState, handleModelReady, handleResult } =
-    useEdgeImpulseKeywordDetection(true, onKeywordDetected, webViewRefs);
+    useEdgeImpulseKeywordDetection(true, onKeywordDetected, eiWebViewRef);
 
   useHeartbeat(userId, userLocation?.latitude ?? null, userLocation?.longitude ?? null, !!userId);
 
@@ -279,17 +277,10 @@ export default function HomeMapScreen({ navigation }: any) {
       {/* ── Hidden Edge Impulse WebViews (0×0, invisible) ── */}
       <EdgeImpulseWebView
         ref={eiWebViewRef}
-        modelFile="edge-impulse-standalone.js"
+        modelFile="edge-impulse-standalone-all.js"
         onReady={handleModelReady}
         onResult={handleResult}
-        onError={(msg) => console.warn('[EI Bachao]', msg)}
-      />
-      <EdgeImpulseWebView
-        ref={helpWebViewRef}
-        modelFile="edge-impulse-help.js"
-        onReady={handleModelReady}
-        onResult={handleResult}
-        onError={(msg) => console.warn('[EI Help]', msg)}
+        onError={(msg) => console.warn('[EI Classifier]', msg)}
       />
 
       {/* ── Leaflet map ── */}

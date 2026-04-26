@@ -9,7 +9,7 @@
 //   browser engine), and bridge audio chunks to it via postMessage.
 //
 // SETUP:
-//   1. Copy edge-impulse-standalone.js and edge-impulse-standalone.wasm
+//   1. Copy edge-impulse-standalone-all.js and edge-impulse-standalone-all.wasm
 //      into your app's assets folder (see ASSET SETUP section below).
 //   2. Drop <EdgeImpulseWebView ref={eiRef} /> anywhere in HomeMapScreen.
 //   3. useEdgeImpulseKeywordDetection() replaces useKeywordDetectionSOS().
@@ -66,7 +66,7 @@ export type EIKeywordDetectionState = {
 // ─────────────────────────────────────────────────────────────────────────────
 // HTML Generator
 // ─────────────────────────────────────────────────────────────────────────────
-function buildEIHtml(baseUrl: string, modelFile: string = 'edge-impulse-standalone.js'): string {
+function buildEIHtml(baseUrl: string, modelFile: string = 'edge-impulse-standalone-all.js'): string {
   // Determine expected WASM filename (default is edge-impulse-standalone.wasm)
   const wasmFile = modelFile.replace('.js', '.wasm');
 
@@ -279,7 +279,7 @@ export const EdgeImpulseWebView = forwardRef<
 export function useEdgeImpulseKeywordDetection(
   enabled: boolean = true,
   onKeywordDetected?: (confidence: number, label: string) => void,
-  webViewRefs?: Array<React.RefObject<EIWebViewHandle | null>>,
+  webViewRef?: React.RefObject<EIWebViewHandle | null>,
 ) {
   const [state, setState] = useState<EIKeywordDetectionState>({
     isListening:    false,
@@ -372,9 +372,7 @@ export function useEdgeImpulseKeywordDetection(
 
       AudioRecord.on('data', (data: string) => {
         if (!monitoringRef.current) return;
-        webViewRefs?.forEach(ref => {
-          ref.current?.sendAudio(data, AUDIO_SAMPLE_RATE);
-        });
+        webViewRef?.current?.sendAudio(data, AUDIO_SAMPLE_RATE);
         const chunk = Buffer.from(data, 'base64');
         const numSamples = Math.floor(chunk.length / 2);
         let rmsSum = 0;
@@ -392,16 +390,16 @@ export function useEdgeImpulseKeywordDetection(
     GlobalMicState.isListening = true;
     setState(s => ({ ...s, isListening: true, status: 'listening' }));
     console.log('[keyword-EI] 🎤 Audio streaming started → Edge Impulse WebView');
-  }, [webViewRefs]);
+  }, [webViewRef]);
 
   const stopListening = useCallback(() => {
     monitoringRef.current      = false;
     GlobalMicState.isListening = false;
     GlobalMicState.level       = 0;
     AudioRecord.stop();
-    webViewRefs?.forEach(ref => ref.current?.reset());
+    webViewRef?.current?.reset();
     setState(s => ({ ...s, isListening: false, status: 'idle' }));
-  }, [webViewRefs]);
+  }, [webViewRef]);
 
   useEffect(() => {
     if (enabled) {
