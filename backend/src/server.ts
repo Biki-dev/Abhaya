@@ -28,17 +28,29 @@ const completeRouteSchema = z.object({
   completedAt: z.string().datetime().optional(),
 });
 
+import { createServer } from 'http';
+import { setupSocket } from './socket.js';
+import { safetyRouter } from './safetyRoutes.js';
+
 export function startServer() {
   const app = express();
+  const httpServer = createServer(app);
   const port = Number(process.env.PORT ?? 4000);
+
+  setupSocket(httpServer);
 
   app.use(cors());
   app.use(express.json());
+  
+  // Serve web-viewer static files
+  const webViewerPath = new URL('../../web-viewer', import.meta.url).pathname;
+  app.use('/view', express.static(webViewerPath));
 
   // ── Routers ──────────────────────────────────────────────────────────────
   app.use(sensorRouter);
   app.use(contactsRouter);
   app.use(crimeRouter);
+  app.use(safetyRouter);
 
   // ── Health ────────────────────────────────────────────────────────────────
   app.get('/health', async (_req, res) => {
@@ -166,7 +178,7 @@ export function startServer() {
     }
   });
 
-  app.listen(port, '0.0.0.0', () => {
+  httpServer.listen(port, '0.0.0.0', () => {
     console.log(`Backend running on http://0.0.0.0:${port}`);
   });
 }

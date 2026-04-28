@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rakshita Live Tracking</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF3B30;
+            --bg: #0A0A0A;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text: #FFFFFF;
+            --text-dim: #A0A0A0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: none;
+        }
+
+        .card {
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 5px;
+        }
+
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .title {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            margin-top: 10px;
+            padding: 6px 12px;
+            border-radius: 100px;
+            width: fit-content;
+        }
+
+        .status-live {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .status-offline {
+            background: rgba(255, 59, 48, 0.15);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
+        .user-info {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: var(--text-dim);
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        .error-msg {
+            display: none;
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            margin-top: 10px;
+        }
+
+        /* Leaflet Dark Theme */
+        .leaflet-container {
+            background: #000 !important;
+        }
+        .leaflet-layer,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out,
+        .leaflet-control-attribution {
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+        
+        .user-marker {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 59, 48, 0.6);
+        }
+
+        .history-section {
+            margin-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+        }
+
+        .history-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .history-time {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .history-loc {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="overlay">
+        <div class="card">
+            <div class="header">
+                <div class="logo">R</div>
+                <div class="title">Rakshita Live</div>
+            </div>
+            <div id="statusIndicator" class="status status-offline">
+                <div class="pulse"></div>
+                <span id="statusText">Waiting for Session...</span>
+            </div>
+
+            <div class="user-info">
+                <div class="info-item">
+                    <span class="info-label">User</span>
+                    <span class="info-value" id="userName">---</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Last Updated</span>
+                    <span class="info-value" id="lastUpdated">---</span>
+                </div>
+            </div>
+
+            <div id="errorMsg" class="error-msg"></div>
+
+            <div id="historySection" class="history-section" style="display: none;">
+                <div class="history-title">
+                    <span>🕒 Recent History</span>
+                </div>
+                <div id="historyList" class="history-list">
+                    <!-- History items injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        // CHANGE THIS to your production backend URL (e.g., https://rakshita-backend.railway.app)
+        const PRODUCTION_BACKEND_URL = 'https://your-backend-url.com';
+
+        const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') 
+            ? 'http://localhost:4000' 
+            : PRODUCTION_BACKEND_URL;
+            
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('s');
+
+        let map, marker, socket;
+
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([0, 0], 2);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        }
+
+        async function fetchSession() {
+            if (!sessionId) {
+                showError("No session ID provided in URL.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/safety-sessions/${sessionId}`);
+                const data = await res.json();
+
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                document.getElementById('userName').textContent = data.user.name;
+                
+                if (data.lastLat && data.lastLng) {
+                    updateLocation(data.lastLat, data.lastLng);
+                }
+                
+                if (data.status === 'COMPLETED') {
+                    setStatus('Session Ended (Last Location Shown)', false);
+                } else {
+                    connectSocket();
+                }
+
+                renderHistory(data.history || []);
+            } catch (e) {
+                console.error(e);
+                showError("Failed to load session details. Make sure backend is running.");
+            }
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('historySection');
+            const list = document.getElementById('historyList');
+            container.style.display = 'block';
+            
+            if (!history || history.length === 0) {
+                list.innerHTML = '<div class="history-loc" style="padding: 10px;">No previous history found.</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+            history.forEach(item => {
+                const date = new Date(item.startedAt);
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.onclick = () => updateLocation(item.lastLat, item.lastLng, true);
+                
+                div.innerHTML = `
+                    <div class="history-time">${date.toLocaleDateString()} at ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                    <div class="history-loc">Last seen: ${item.lastLat ? item.lastLat.toFixed(4) : '---'}, ${item.lastLng ? item.lastLng.toFixed(4) : '---'}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function connectSocket() {
+            socket = io(API_BASE);
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                socket.emit('join-session', sessionId);
+                setStatus('Connected - Tracking Live', true);
+            });
+
+            socket.on('location-updated', (data) => {
+                updateLocation(data.lat, data.lng);
+                document.getElementById('lastUpdated').textContent = new Date(data.timestamp).toLocaleTimeString();
+            });
+
+            socket.on('disconnect', () => {
+                setStatus('Disconnected', false);
+            });
+        }
+
+        function updateLocation(lat, lng, isHistory = false) {
+            if (!lat || !lng) return;
+            
+            const pos = [lat, lng];
+            if (!marker) {
+                const icon = L.divIcon({
+                    className: 'user-marker-container',
+                    html: '<div class="user-marker"></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                marker = L.marker(pos, { icon }).addTo(map);
+                map.setView(pos, 15);
+            } else {
+                marker.setLatLng(pos);
+                if (!isHistory || confirm('View this historical location on map?')) {
+                    map.panTo(pos);
+                }
+            }
+        }
+
+        function setStatus(text, live) {
+            const el = document.getElementById('statusIndicator');
+            const txt = document.getElementById('statusText');
+            txt.textContent = text;
+            
+            if (live) {
+                el.className = 'status status-live';
+            } else {
+                el.className = 'status status-offline';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        initMap();
+        fetchSession();
+    </script>
+</body>
+</html>

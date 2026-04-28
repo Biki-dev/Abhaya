@@ -10,7 +10,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet, Text, View, TouchableOpacity,
-  Modal, Vibration, ActivityIndicator,
+  Modal, Vibration, ActivityIndicator, Share,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { useSensorFusion }        from '../hooks/useSensorFusion';
 import { useBLEMesh }             from '../hooks/useBLEMesh';
 import { useHeartbeat }           from '../hooks/useHeartbeat';
 import { useCrimeZones }          from '../hooks/useCrimeZones';
+import { useSafetyTracking }      from '../hooks/useSafetyTracking';
 import {
   EdgeImpulseWebView,
   EIWebViewHandle,
@@ -66,6 +67,15 @@ export default function HomeMapScreen({ navigation }: any) {
   const sensors = useSensorFusion(true);
   useBLEMesh(false);
 
+  const crime = useCrimeZones(userLocation, {
+    enabled: crimeVisible,
+    radius: 2_500,
+    refreshIntervalMs: 180_000,
+    movementThresholdMeters: 500,
+  });
+
+  const { session, triggerManualSOS } = useSafetyTracking(userLocation, crime.zones);
+
   // ── Keyword detection callback ────────────────────────────────────────────
   const onKeywordDetected = useCallback((confidence: number, label: string) => {
     if (userId) {
@@ -73,18 +83,15 @@ export default function HomeMapScreen({ navigation }: any) {
         { keyword: label, confidence, model: 'edge_impulse' },
         userLocation?.latitude ?? null, userLocation?.longitude ?? null).catch(() => {});
     }
+    // Start live tracking and SMS emergency contacts
+    triggerManualSOS(`keyword detected (${label})`);
+    
     triggerAutoSOS(`Keyword detected (${label}) — confidence ${confidence.toFixed(2)}`);
-  }, [userId, userLocation]);
+  }, [userId, userLocation, triggerManualSOS]);
 
   // ── Edge Impulse hook ─────────────────────────────────────────────────────
   const { state: keywordState, handleModelReady, handleResult } =
     useEdgeImpulseKeywordDetection(true, onKeywordDetected, eiWebViewRef);
-  const crime = useCrimeZones(userLocation, {
-    enabled: crimeVisible,
-    radius: 2_500,
-    refreshIntervalMs: 180_000,
-    movementThresholdMeters: 500,
-  });
 
   useHeartbeat(userId, userLocation?.latitude ?? null, userLocation?.longitude ?? null, !!userId);
 
@@ -311,6 +318,26 @@ export default function HomeMapScreen({ navigation }: any) {
         </View>
       </View>
 
+      {/* Safety Session pill */}
+      {session && (
+        <View style={s.safetyBar}>
+          <TouchableOpacity 
+            style={s.safetyPill}
+            onPress={async () => {
+              const base = "http://127.0.0.1:5500/web-viewer/index.html"; // CHANGE THIS to your production web viewer URL
+              const url = `${base}/view/?s=${session.id}`;
+              await Share.share({
+                message: `I'm in a crime zone. Follow my live location here: ${url}`,
+                url: url
+              });
+            }}
+          >
+            <View style={s.liveDot} />
+            <Text style={s.safetyText}>Live Sharing Active · Tap to Share</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Right-side quick buttons */}
       <View style={s.quickActions}>
         <TouchableOpacity style={s.quickBtn} onPress={() => navigation.navigate('SensorDashboard')}>
@@ -421,6 +448,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.border, elevation: 2,
   },
   kwText: { fontSize: 11, color: colors.muted, fontFamily: 'Manrope_500Medium' },
+  safetyBar: { position: 'absolute', top: 100, left: spacing.lg },
+  safetyPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: borderRadius.full,
+    paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
+  safetyText: { fontSize: 11, color: '#EF4444', fontFamily: 'Manrope_700Bold' },
   quickActions: { position: 'absolute', right: spacing.lg, top: 70, gap: 10 },
   quickBtn: {
     width: 46, height: 46, borderRadius: 14, backgroundColor: colors.surface,
