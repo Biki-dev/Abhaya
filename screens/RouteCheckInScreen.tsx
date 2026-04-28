@@ -17,70 +17,9 @@ import { sendPoliceSOS } from '../services/policeSOS';
 import { logSensorEvent } from '../services/sensorDb';
 import PoliceAlertBanner from '../components/PoliceAlertBanner';
 import type { PoliceSMSResult } from '../services/policeSOS';
+import { useCrimeZones } from '../hooks/useCrimeZones';
+import { buildLeafletHTML } from '../utils/buildLeafletHTML';
 
-// ── Leaflet HTML (supports route polyline + markers) ─────────────────────────
-function buildLeafletHTML(lat: number, lng: number): string {
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body,#map{width:100%;height:100%;background:#e8e0d8;}
-.dot{width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid #fff;box-shadow:0 2px 8px rgba(59,130,246,.6);}
-.dest{width:22px;height:22px;border-radius:50%;background:#10B981;border:3px solid #fff;box-shadow:0 2px 8px rgba(16,185,129,.5);}
-.leaflet-control-attribution{font-size:9px!important}
-</style>
-</head>
-<body>
-<div id="map"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-var map=L.map('map',{zoomControl:true}).setView([${lat},${lng}],15);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom:19
-}).addTo(map);
-
-var dotIcon =L.divIcon({className:'',html:'<div class="dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
-var destIcon=L.divIcon({className:'',html:'<div class="dest"></div>',iconSize:[22,22],iconAnchor:[11,11]});
-
-var userMarker=L.marker([${lat},${lng}],{icon:dotIcon}).addTo(map);
-var destMarker=null;
-var routeLine=null;
-
-function handleMsg(raw){
-  try{
-    var m=JSON.parse(raw);
-    if(m.type==='loc'){
-      userMarker.setLatLng([m.lat,m.lng]);
-    }
-    if(m.type==='dest'){
-      if(destMarker) map.removeLayer(destMarker);
-      destMarker=L.marker([m.lat,m.lng],{icon:destIcon}).bindPopup(m.name||'Destination').addTo(map);
-    }
-    if(m.type==='route'){
-      if(routeLine) map.removeLayer(routeLine);
-      var pts=m.points.map(function(p){return[p.lat,p.lng];});
-      routeLine=L.polyline(pts,{color:'#3B82F6',weight:5,opacity:0.85}).addTo(map);
-      map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
-    }
-    if(m.type==='clear'){
-      if(destMarker){map.removeLayer(destMarker);destMarker=null;}
-      if(routeLine){map.removeLayer(routeLine);routeLine=null;}
-    }
-    if(m.type==='center'){
-      map.setView([m.lat,m.lng],m.zoom||15);
-    }
-  }catch(e){}
-}
-document.addEventListener('message',function(e){handleMsg(e.data);});
-window.addEventListener('message',function(e){handleMsg(e.data);});
-</script>
-</body>
-</html>`;
-}
 
 // ── Nominatim geocode ─────────────────────────────────────────────────────────
 type NominatimItem = { place_id: string; display_name: string; lat: string; lon: string };
@@ -110,7 +49,7 @@ async function getOSRMRoute(
 }
 
 interface Loc { latitude: number; longitude: number; }
-const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362);
+const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { enableRoute: true, zoom: 15 });
 
 export default function RouteCheckInScreen({ navigation }: any) {
   const [destination, setDestination]         = useState('');
@@ -128,6 +67,8 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const [showSugg, setShowSugg]               = useState(false);
   const [mapHTML, setMapHTML]                 = useState(DEFAULT_HTML);
   const initialMapSet                         = useRef(false);
+  const [crimeVisible, setCrimeVisible]       = useState(true);
+  const [crimeHint, setCrimeHint]             = useState<string | null>(null);
 
   const [timeRemainingSec, setTimeRemainingSec] = useState<number | null>(null);
   const hasTriggeredLateSOS                   = useRef(false);
@@ -143,11 +84,24 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const webViewRef        = useRef<WebView>(null);
   const locationWatchRef  = useRef<Location.LocationSubscription | null>(null);
   const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const crime = useCrimeZones(userLocation, {
+    enabled: crimeVisible,
+    radius: 3_000,
+    refreshIntervalMs: 180_000,
+    movementThresholdMeters: 500,
+  });
 
   // Send message to the Leaflet map
   const postMap = useCallback((msg: object) => {
     webViewRef.current?.postMessage(JSON.stringify(msg));
   }, []);
+
+  useEffect(() => {
+    postMap({ type: 'toggle-crime-zones', visible: crimeVisible });
+    if (crimeVisible) {
+      postMap({ type: 'crime-zones', featureCollection: crime.zones });
+    }
+  }, [crime.zones, crimeVisible, postMap]);
 
   // Debounced Nominatim suggestions
   useEffect(() => {
@@ -218,7 +172,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
       setUserLocation(c);
       userLocRef.current = c;
       if (!initialMapSet.current) {
-        setMapHTML(buildLeafletHTML(c.latitude, c.longitude));
+        setMapHTML(buildLeafletHTML(c.latitude, c.longitude, { enableRoute: true, zoom: 15 }));
         initialMapSet.current = true;
       } else {
         postMap({ type: 'loc', lat: c.latitude, lng: c.longitude });
@@ -402,6 +356,14 @@ export default function RouteCheckInScreen({ navigation }: any) {
               ref={webViewRef}
               style={st.map}
               source={{ html: mapHTML }}
+              onMessage={(event) => {
+                try {
+                  const parsed = JSON.parse(event.nativeEvent.data);
+                  if (parsed?.type === 'crime-zone-pressed') {
+                    setCrimeHint(parsed?.zone?.label ?? 'Crime zone selected');
+                  }
+                } catch {}
+              }}
               originWhitelist={['*']}
               javaScriptEnabled
               domStorageEnabled
@@ -433,6 +395,15 @@ export default function RouteCheckInScreen({ navigation }: any) {
               }}
             >
               <Ionicons name="locate" size={17} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[st.crimeToggleBtn, crimeVisible && { borderColor: '#F59E0B' }]}
+              onPress={() => {
+                setCrimeVisible((v) => !v);
+                setCrimeHint(null);
+              }}
+            >
+              <MaterialCommunityIcons name="map-marker-radius" size={16} color={crimeVisible ? '#F59E0B' : colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -553,6 +524,19 @@ export default function RouteCheckInScreen({ navigation }: any) {
                 <Text style={st.routeInfoText}>Route loaded via OSRM · OpenStreetMap</Text>
               </View>
             )}
+            {crimeVisible && (
+              <View style={st.crimeInfoBox}>
+                <Text style={st.crimeInfoText}>
+                  {crime.loading
+                    ? 'Loading crime zones…'
+                    : crime.error
+                    ? `Crime layer unavailable ${console.log(crime.error)}`
+                    : `Crime zones: ${crime.zones.features.length}${crime.cached ? ' · cache' : ''}`}
+                </Text>
+                {crimeHint ? <Text style={st.crimeInfoText}>{crimeHint}</Text> : null}
+                <Text style={st.crimeInfoSub}>Crime data is approximate and for awareness only.</Text>
+              </View>
+            )}
 
             {routeHistory.length > 0 && (
               <>
@@ -608,6 +592,14 @@ export default function RouteCheckInScreen({ navigation }: any) {
               ref={webViewRef}
               style={st.map}
               source={{ html: mapHTML }}
+              onMessage={(event) => {
+                try {
+                  const parsed = JSON.parse(event.nativeEvent.data);
+                  if (parsed?.type === 'crime-zone-pressed') {
+                    setCrimeHint(parsed?.zone?.label ?? 'Crime zone selected');
+                  }
+                } catch {}
+              }}
               originWhitelist={['*']}
               javaScriptEnabled
               domStorageEnabled
@@ -698,6 +690,11 @@ const st = StyleSheet.create({
     width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', elevation: 3,
   },
+  crimeToggleBtn: {
+    position: 'absolute', top: spacing.sm + 42, right: spacing.md,
+    width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', elevation: 3,
+  },
 
   section:      { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
   sectionTitle: { ...typography.subheading, color: colors.text, marginBottom: spacing.md },
@@ -762,6 +759,17 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: colors.primary + '30',
   },
   routeInfoText: { fontSize: 12, color: colors.primary, fontFamily: 'Manrope_600SemiBold' },
+  crimeInfoBox: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  crimeInfoText: { ...typography.caption, color: colors.textSecondary },
+  crimeInfoSub: { ...typography.caption, color: colors.muted, marginTop: spacing.xs },
 
   histCard: {
     backgroundColor: colors.surface, borderRadius: borderRadius.md,

@@ -92,6 +92,20 @@ model Heartbeat {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model CrimeZoneCache {
+  key       String   @id
+  lat       Float
+  lng       Float
+  radius    Int
+  severity  String?
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
 enum RouteStatus {
   ACTIVE
   COMPLETED

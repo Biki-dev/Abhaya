@@ -26,7 +26,7 @@ export function getApiBaseUrlCandidates() {
 
   const platformDefaults =
     Platform.OS === 'android'
-      ? ['http://10.168.73.47:4000', 'http://localhost:4000']
+      ? ['http://10.191.223.47:4000', 'http://localhost:4000']
       : ['http://localhost:4000'];
 
   const candidates = [

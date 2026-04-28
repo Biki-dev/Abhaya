@@ -7,7 +7,7 @@
 //   - kwStatus text updated to show EI project name
 //   - Everything else (SOS flow, sensors, map) unchanged
 // ─────────────────────────────────────────────────────────────────────────────
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet, Text, View, TouchableOpacity,
   Modal, Vibration, ActivityIndicator,
@@ -19,6 +19,7 @@ import { colors, spacing, typography, borderRadius } from '../theme';
 import { useSensorFusion }        from '../hooks/useSensorFusion';
 import { useBLEMesh }             from '../hooks/useBLEMesh';
 import { useHeartbeat }           from '../hooks/useHeartbeat';
+import { useCrimeZones }          from '../hooks/useCrimeZones';
 import {
   EdgeImpulseWebView,
   EIWebViewHandle,
@@ -29,52 +30,10 @@ import { sendPoliceSOS }          from '../services/policeSOS';
 import type { PoliceSMSResult }   from '../services/policeSOS';
 import PoliceAlertBanner          from '../components/PoliceAlertBanner';
 import AsyncStorage               from '@react-native-async-storage/async-storage';
+import { buildLeafletHTML }       from '../utils/buildLeafletHTML';
 
 const AUTO_SOS_COUNTDOWN = 5;
-
-function buildLeafletHTML(lat: number, lng: number): string {
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-html,body,#map { width:100%;height:100%;background:#e8e0d8; }
-.dot { width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid #fff;box-shadow:0 2px 8px rgba(59,130,246,.6); }
-.ring { width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,.2);animation:pulse 2s ease-out infinite; }
-@keyframes pulse{0%{transform:scale(.4);opacity:1}100%{transform:scale(2.2);opacity:0}}
-.leaflet-control-attribution{font-size:9px!important}
-</style>
-</head>
-<body>
-<div id="map"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-var map = L.map('map',{zoomControl:true,attributionControl:true}).setView([${lat},${lng}],16);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom:19
-}).addTo(map);
-var ringIcon = L.divIcon({className:'',html:'<div class="ring"></div>',iconSize:[36,36],iconAnchor:[18,18]});
-var dotIcon  = L.divIcon({className:'',html:'<div class="dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
-var ring = L.marker([${lat},${lng}],{icon:ringIcon,zIndexOffset:-1}).addTo(map);
-var dot  = L.marker([${lat},${lng}],{icon:dotIcon}).addTo(map);
-function handleMsg(data){
-  try{
-    var m=JSON.parse(data);
-    if(m.type==='loc'){dot.setLatLng([m.lat,m.lng]);ring.setLatLng([m.lat,m.lng]);}
-    if(m.type==='center'){map.setView([m.lat,m.lng],16);}
-  }catch(e){}
-}
-document.addEventListener('message',function(e){handleMsg(e.data);});
-window.addEventListener('message',function(e){handleMsg(e.data);});
-</script>
-</body>
-</html>`;
-}
-
-const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362);
+const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { showPulse: true, zoom: 16 });
 
 export default function HomeMapScreen({ navigation }: any) {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -83,6 +42,8 @@ export default function HomeMapScreen({ navigation }: any) {
   const [locationGranted, setLocationGranted] = useState(false);
   const [mapHTML, setMapHTML]           = useState(DEFAULT_HTML);
   const initialMapSet                   = useRef(false);
+  const [crimeVisible, setCrimeVisible] = useState(true);
+  const [selectedCrimeLabel, setSelectedCrimeLabel] = useState<string | null>(null);
 
   const [autoSOSVisible, setAutoSOSVisible]     = useState(false);
   const [autoSOSCountdown, setAutoSOSCountdown] = useState(AUTO_SOS_COUNTDOWN);
@@ -118,6 +79,12 @@ export default function HomeMapScreen({ navigation }: any) {
   // ── Edge Impulse hook ─────────────────────────────────────────────────────
   const { state: keywordState, handleModelReady, handleResult } =
     useEdgeImpulseKeywordDetection(true, onKeywordDetected, eiWebViewRef);
+  const crime = useCrimeZones(userLocation, {
+    enabled: crimeVisible,
+    radius: 2_500,
+    refreshIntervalMs: 180_000,
+    movementThresholdMeters: 500,
+  });
 
   useHeartbeat(userId, userLocation?.latitude ?? null, userLocation?.longitude ?? null, !!userId);
 
@@ -134,6 +101,13 @@ export default function HomeMapScreen({ navigation }: any) {
   const postToMap = useCallback((msg: object) => {
     mapWebViewRef.current?.postMessage(JSON.stringify(msg));
   }, []);
+
+  useEffect(() => {
+    postToMap({ type: 'toggle-crime-zones', visible: crimeVisible });
+    if (crimeVisible) {
+      postToMap({ type: 'crime-zones', featureCollection: crime.zones });
+    }
+  }, [crime.zones, crimeVisible, postToMap]);
 
   // GPS setup
   useEffect(() => {
@@ -153,7 +127,7 @@ export default function HomeMapScreen({ navigation }: any) {
         const c = { latitude: last.coords.latitude, longitude: last.coords.longitude };
         setUserLocation(c);
         if (!initialMapSet.current) {
-          setMapHTML(buildLeafletHTML(c.latitude, c.longitude));
+          setMapHTML(buildLeafletHTML(c.latitude, c.longitude, { showPulse: true, zoom: 16 }));
           initialMapSet.current = true;
         }
       }
@@ -163,7 +137,7 @@ export default function HomeMapScreen({ navigation }: any) {
         const c = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
         setUserLocation(c);
         if (!initialMapSet.current) {
-          setMapHTML(buildLeafletHTML(c.latitude, c.longitude));
+          setMapHTML(buildLeafletHTML(c.latitude, c.longitude, { showPulse: true, zoom: 16 }));
           initialMapSet.current = true;
         } else {
           postToMap({ type: 'center', lat: c.latitude, lng: c.longitude });
@@ -288,6 +262,14 @@ export default function HomeMapScreen({ navigation }: any) {
         ref={mapWebViewRef}
         style={s.map}
         source={{ html: mapHTML }}
+        onMessage={(event) => {
+          try {
+            const parsed = JSON.parse(event.nativeEvent.data);
+            if (parsed?.type === 'crime-zone-pressed') {
+              setSelectedCrimeLabel(parsed?.zone?.label ?? 'Crime zone selected');
+            }
+          } catch {}
+        }}
         originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled
@@ -339,6 +321,15 @@ export default function HomeMapScreen({ navigation }: any) {
         }}>
           <Ionicons name="locate" size={20} color={colors.primary} />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.quickBtn, crimeVisible && { borderColor: '#F59E0B' }]}
+          onPress={() => {
+            setCrimeVisible(v => !v);
+            setSelectedCrimeLabel(null);
+          }}
+        >
+          <MaterialCommunityIcons name="map-marker-radius" size={20} color={crimeVisible ? '#F59E0B' : colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Police alert banner */}
@@ -368,6 +359,28 @@ export default function HomeMapScreen({ navigation }: any) {
           {'   Shakes: ' + sensors.motion.shakeCount}
           {'   Acc: ' + sensors.accelerometer.magnitude.toFixed(2) + 'g'}
         </Text>
+        {crimeVisible && (
+          <>
+            <View style={s.legendRow}>
+              <Text style={s.legendTitle}>Crime zones</Text>
+              <View style={s.legendPills}>
+                <View style={[s.legendDot, { backgroundColor: '#EF4444' }]} />
+                <View style={[s.legendDot, { backgroundColor: '#F97316' }]} />
+                <View style={[s.legendDot, { backgroundColor: '#F59E0B' }]} />
+                <View style={[s.legendDot, { backgroundColor: '#84CC16' }]} />
+              </View>
+            </View>
+            <Text style={s.hintSmall}>
+              {crime.loading
+                ? 'Loading crime zones…'
+                : crime.error
+                ? 'Crime data unavailable'
+                : `Zones: ${crime.zones.features.length}${crime.lastUpdated ? ` · Updated ${new Date(crime.lastUpdated).toLocaleTimeString()}` : ''}${crime.cached ? ' · cache' : ''}`}
+            </Text>
+            {selectedCrimeLabel ? <Text style={s.hintSmall}>{selectedCrimeLabel}</Text> : null}
+            <Text style={s.disclaimer}>Crime data is approximate and for awareness only.</Text>
+          </>
+        )}
       </View>
 
       {/* Auto-SOS modal */}
@@ -437,6 +450,17 @@ const s = StyleSheet.create({
   },
   sosBtnText: { ...typography.body, color: '#fff', fontFamily: 'Manrope_700Bold' },
   hint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
+  legendRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  legendTitle: { ...typography.bodySmall, color: colors.text, fontFamily: 'Manrope_600SemiBold' },
+  legendPills: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  legendDot: { width: 10, height: 10, borderRadius: 999 },
+  hintSmall: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
+  disclaimer: { ...typography.caption, color: colors.muted, marginTop: spacing.xs, textAlign: 'center' },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   modalCard: {
     backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.xl,

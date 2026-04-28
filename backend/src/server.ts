@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from './db.js';
 import { sensorRouter } from './sensorRoutes.js';
 import { contactsRouter } from './contactsRoutes.js';
+import { crimeRouter } from './crimeRoutes.js';
 
 const upsertUserSchema = z.object({
   phone: z.string().min(10),
@@ -37,6 +38,7 @@ export function startServer() {
   // ── Routers ──────────────────────────────────────────────────────────────
   app.use(sensorRouter);
   app.use(contactsRouter);
+  app.use(crimeRouter);
 
   // ── Health ────────────────────────────────────────────────────────────────
   app.get('/health', async (_req, res) => {
