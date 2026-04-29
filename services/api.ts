@@ -22,15 +22,18 @@ function getExpoHostBaseUrl() {
 }
 
 export function getApiBaseUrlCandidates() {
+  const PRODUCTION_URL = 'https://abhaya-backend.onrender.com';
+  
   const expoHostBaseUrl = getExpoHostBaseUrl();
 
   const platformDefaults =
     Platform.OS === 'android'
-      ? ['http://10.191.223.47:4000', 'http://localhost:4000']
+      ? ['http://10.0.2.2:4000', 'http://localhost:4000']
       : ['http://localhost:4000'];
 
   const candidates = [
     EXPO_PUBLIC_API_BASE_URL,
+    PRODUCTION_URL,
     EXPO_PUBLIC_LAN_API_BASE_URL,
     expoHostBaseUrl,
     ...platformDefaults,
