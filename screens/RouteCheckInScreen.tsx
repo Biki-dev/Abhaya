@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import { useLocation } from '../context/LocationContext';
 import { colors, spacing, typography, borderRadius, sizes } from '../theme';
 import {
   completeRouteHistory, createRouteHistory, getUserRouteHistory,
@@ -62,9 +62,8 @@ const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { enableRoute: true, zoo
 export default function RouteCheckInScreen({ navigation }: any) {
   const [destination, setDestination]         = useState('');
   const [estimatedTime, setEstimatedTime]     = useState('30');
-  const [userLocation, setUserLocation]       = useState<Loc | null>(null);
   const [destLocation, setDestLocation]       = useState<Loc | null>(null);
-  const [locationGranted, setLocationGranted] = useState(false);
+  const { userLocation, locationGranted } = useLocation();
   const [routeHistory, setRouteHistory]       = useState<RouteHistoryRecord[]>([]);
   const [activeCheckIn, setActiveCheckIn]     = useState<{
     destination: string; estimatedTime: number; startTime: number; routeId?: number;
@@ -72,7 +71,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const [searchLoading, setSearchLoading]     = useState(false);
   const [suggestions, setSuggestions]         = useState<NominatimItem[]>([]);
   const [showSugg, setShowSugg]               = useState(false);
-  const [mapHTML, setMapHTML]                 = useState(DEFAULT_HTML);
+  const [mapHTML, setMapHTML]                 = useState<string>(DEFAULT_HTML);
   const initialMapSet                         = useRef(false);
   const [crimeVisible, setCrimeVisible]       = useState(true);
   const [crimeHint, setCrimeHint]             = useState<string | null>(null);
@@ -88,7 +87,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const [userName, setUserName] = useState('Unknown');
 
   const webViewRef        = useRef<WebView>(null);
-  const locationWatchRef  = useRef<Location.LocationSubscription | null>(null);
+  // Removed unused locationWatchRef
   const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const crime = useCrimeZones(userLocation, {
@@ -163,40 +162,17 @@ export default function RouteCheckInScreen({ navigation }: any) {
     postMap({ type: 'route', points: pts.map(p => ({ lat: p.latitude, lng: p.longitude })) });
   };
 
-  // GPS
+
+  // Sync mapHTML with userLocation from context
   useEffect(() => {
-    let active = true;
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { setLocationGranted(false); return; }
-      setLocationGranted(true);
-      await syncStoredUserWithBackend().catch(() => {});
-      await loadHistory();
-
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      if (!active) return;
-      const c = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-      setUserLocation(c); userLocationRef.current = c;
-      if (!initialMapSet.current) {
-        setMapHTML(buildLeafletHTML(c.latitude, c.longitude, { enableRoute: true, zoom: 15 }));
-        initialMapSet.current = true;
-      } else {
-        postMap({ type: 'loc', lat: c.latitude, lng: c.longitude });
-        postMap({ type: 'center', lat: c.latitude, lng: c.longitude, zoom: 15 });
-      }
-
-      locationWatchRef.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
-        u => {
-          if (!active) return;
-          const uc = { latitude: u.coords.latitude, longitude: u.coords.longitude };
-          setUserLocation(uc); userLocationRef.current = uc;
-          postMap({ type: 'loc', lat: uc.latitude, lng: uc.longitude });
-        },
-      );
-    })();
-    return () => { active = false; locationWatchRef.current?.remove(); };
-  }, []);
+    if (userLocation && !initialMapSet.current) {
+      setMapHTML(buildLeafletHTML(userLocation.latitude, userLocation.longitude, { enableRoute: true, zoom: 15 }));
+      initialMapSet.current = true;
+    } else if (userLocation && initialMapSet.current) {
+      postMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude, zoom: 15 });
+      postMap({ type: 'loc', lat: userLocation.latitude, lng: userLocation.longitude });
+    }
+  }, [userLocation, postMap]);
 
   const handleCheckIn = async () => {
     if (!destination.trim()) return;
@@ -280,6 +256,8 @@ export default function RouteCheckInScreen({ navigation }: any) {
     { id: 3, name: 'Hospital',         latitude: 26.1533, longitude: 91.7441 },
     { id: 4, name: 'Railway Station',  latitude: 26.1848, longitude: 91.7469 },
   ];
+
+
 
   return (
     <View style={st.container}>

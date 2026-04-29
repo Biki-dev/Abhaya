@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import { useLocation } from '../context/LocationContext';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { useSensorFusion } from '../hooks/useSensorFusion';
 import { useBLEMesh } from '../hooks/useBLEMesh';
@@ -26,11 +26,12 @@ import { buildLeafletHTML } from '../utils/buildLeafletHTML';
 
 const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { showPulse: true, zoom: 16 });
 
+
 export default function HomeMapScreen({ navigation }: any) {
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const { userLocation, locationGranted } = useLocation();
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Unknown');
-  const [locationGranted, setLocationGranted] = useState(false);
+  // locationGranted is now provided by useLocation context
   const [mapHTML, setMapHTML] = useState(DEFAULT_HTML);
   const initialMapSet = useRef(false);
   const [crimeVisible, setCrimeVisible] = useState(true);
@@ -44,7 +45,7 @@ export default function HomeMapScreen({ navigation }: any) {
   const [policeResult, setPoliceResult] = useState<PoliceSMSResult | null>(null);
   const [showPoliceBanner, setShowPoliceBanner] = useState(false);
 
-  const locationWatcherRef = useRef<Location.LocationSubscription | null>(null);
+  // Removed unused locationWatcherRef
   const mapWebViewRef = useRef<WebView>(null);
   const eiWebViewRef = useRef<EIWebViewHandle>(null);
   const prevMotion = useRef({ isFalling: false, impactDetected: false, isShaking: false, shakeCount: 0 });
@@ -111,57 +112,17 @@ export default function HomeMapScreen({ navigation }: any) {
     }
   }, [crime.zones, crimeVisible, postToMap]);
 
-  // GPS setup — syncs BOTH state AND ref on every update
+
+  // Sync mapHTML with userLocation from context
   useEffect(() => {
-    let active = true;
-    (async () => {
-      const { status: ex } = await Location.getForegroundPermissionsAsync();
-      let granted = ex === 'granted';
-      if (!granted) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        granted = status === 'granted';
-      }
-      if (!granted) { setLocationGranted(false); return; }
-      setLocationGranted(true);
-
-      const last = await Location.getLastKnownPositionAsync({}).catch(() => null);
-      if (last && active) {
-        const c = { latitude: last.coords.latitude, longitude: last.coords.longitude };
-        setUserLocation(c);
-        userLocationRef.current = c;           // ★ keep ref in sync
-        if (!initialMapSet.current) {
-          setMapHTML(buildLeafletHTML(c.latitude, c.longitude, { showPulse: true, zoom: 16 }));
-          initialMapSet.current = true;
-        }
-      }
-
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(loc => {
-        if (!active) return;
-        const c = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-        setUserLocation(c);
-        userLocationRef.current = c;           // keep ref in sync
-        if (!initialMapSet.current) {
-          setMapHTML(buildLeafletHTML(c.latitude, c.longitude, { showPulse: true, zoom: 16 }));
-          initialMapSet.current = true;
-        } else {
-          postToMap({ type: 'center', lat: c.latitude, lng: c.longitude });
-          postToMap({ type: 'loc', lat: c.latitude, lng: c.longitude });
-        }
-      }).catch(() => { });
-
-      locationWatcherRef.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
-        upd => {
-          if (!active) return;
-          const c = { latitude: upd.coords.latitude, longitude: upd.coords.longitude };
-          setUserLocation(c);
-          userLocationRef.current = c;         // keep ref in sync
-          postToMap({ type: 'loc', lat: c.latitude, lng: c.longitude });
-        },
-      );
-    })();
-    return () => { active = false; locationWatcherRef.current?.remove(); };
-  }, []);
+    if (userLocation && !initialMapSet.current) {
+      setMapHTML(buildLeafletHTML(userLocation.latitude, userLocation.longitude, { showPulse: true, zoom: 16 }));
+      initialMapSet.current = true;
+    } else if (userLocation && initialMapSet.current) {
+      postToMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude });
+      postToMap({ type: 'loc', lat: userLocation.latitude, lng: userLocation.longitude });
+    }
+  }, [userLocation, postToMap]);
 
   // Sensor watch — triggers SOS for fall / shake
   useEffect(() => {
@@ -472,4 +433,5 @@ const s = StyleSheet.create({
   },
   cancelBtnText: { color: '#fff', fontFamily: 'Manrope_700Bold', fontSize: 16 },
   modalHint: { ...typography.caption, color: colors.muted, marginTop: spacing.lg, textAlign: 'center' },
+
 });

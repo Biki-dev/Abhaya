@@ -10,6 +10,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/manrope';
 import RootNavigator from './navigation/RootNavigator';
+import { LocationProvider } from './context/LocationContext';
 
 // ── Global Error Boundary ──────────────────────────────────────────────────────────────
 // Catches any JS render error and shows it on-screen instead of a blank page.
@@ -55,7 +56,7 @@ const eb = StyleSheet.create({
   stack:     { color: '#aaa', fontSize: 11, fontFamily: 'monospace' },
 });
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// ── App ──────────────────────────────────────────────────────────────────────
 function AppInner() {
   const [fontsLoaded, fontError] = useFonts({
     Manrope_500Medium,
@@ -80,12 +81,14 @@ function AppInner() {
 
   return (
     <GestureHandlerRootView style={styles.flex}>
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-          <RootNavigator />
-          <StatusBar style="dark" backgroundColor="#FAFBFC" />
-        </SafeAreaView>
-      </SafeAreaProvider>
+      <LocationProvider>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+            <RootNavigator />
+            <StatusBar style="dark" backgroundColor="#FAFBFC" />
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </LocationProvider>
     </GestureHandlerRootView>
   );
 }

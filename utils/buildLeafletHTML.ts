@@ -32,7 +32,7 @@ html,body,#map{width:100%;height:100%;background:#e8e0d8;}
 .ring{width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,.2);animation:pulse 2s ease-out infinite;}
 .dest{width:22px;height:22px;border-radius:50%;background:#10B981;border:3px solid #fff;box-shadow:0 2px 8px rgba(16,185,129,.5);}
 @keyframes pulse{0%{transform:scale(.4);opacity:1}100%{transform:scale(2.2);opacity:0}}
-.leaflet-control-attribution{font-size:9px!important}
+.leaflet-control-attribution {font-size: 8px !important;opacity: 0.4;background: transparent !important;}
 </style>
 </head>
 <body>
@@ -42,7 +42,7 @@ html,body,#map{width:100%;height:100%;background:#e8e0d8;}
 <script>
 var map=L.map('map',{zoomControl:true,attributionControl:true}).setView([${lat},${lng}],${zoom});
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  attribution:'&copy; OSM',
   maxZoom:19
 }).addTo(map);
 
