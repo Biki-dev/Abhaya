@@ -13,16 +13,15 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocation } from '../context/LocationContext';
+import { useSOSContextFull } from '../context/SOSContext';
 import { colors, spacing, typography, borderRadius, sizes } from '../theme';
 import {
   completeRouteHistory, createRouteHistory, getUserRouteHistory,
   getStoredUserData, getStoredUserPhone, RouteHistoryRecord,
-  syncStoredUserWithBackend, upsertUser,
+  upsertUser,
 } from '../services/api';
 import PoliceAlertBanner from '../components/PoliceAlertBanner';
-import type { PoliceSMSResult } from '../services/policeSOS';
 import { useCrimeZones } from '../hooks/useCrimeZones';
-import { useSOSWithBackground } from '../hooks/useSOSWithBackground';
 import {
   scheduleCheckinExpiryNotification,
   cancelCheckinExpiryNotification,
@@ -63,7 +62,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const [destination, setDestination]         = useState('');
   const [estimatedTime, setEstimatedTime]     = useState('30');
   const [destLocation, setDestLocation]       = useState<Loc | null>(null);
-  const { userLocation, locationGranted } = useLocation();
+  const { userLocation, locationGranted }     = useLocation();
   const [routeHistory, setRouteHistory]       = useState<RouteHistoryRecord[]>([]);
   const [activeCheckIn, setActiveCheckIn]     = useState<{
     destination: string; estimatedTime: number; startTime: number; routeId?: number;
@@ -77,18 +76,27 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const [crimeHint, setCrimeHint]             = useState<string | null>(null);
   const [timeRemainingSec, setTimeRemainingSec] = useState<number | null>(null);
 
-  const [policeLoading, setPoliceLoading]       = useState(false);
-  const [policeResult, setPoliceResult]         = useState<PoliceSMSResult | null>(null);
-  const [showPoliceBanner, setShowPoliceBanner] = useState(false);
+  const webViewRef  = useRef<WebView>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ★ location ref — so SOS hook always reads fresh coords
-  const userLocationRef = useRef<Loc | null>(null);
-  const [userId, setUserId]   = useState<string | null>(null);
-  const [userName, setUserName] = useState('Unknown');
+  // ── Global SOS context ────────────────────────────────────────────────────
+  const {
+    sosState,
+    triggerSOS,
+    cancelSOS,
+    policeResult,
+    policeLoading,
+    showPoliceBanner,
+    setShowPoliceBanner,
+    updateLocation,
+  } = useSOSContextFull();
 
-  const webViewRef        = useRef<WebView>(null);
-  // Removed unused locationWatchRef
-  const debounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ★ Push fresh GPS into global SOS context so SMS always has latest coords
+  useEffect(() => {
+    if (userLocation) {
+      updateLocation(userLocation.latitude, userLocation.longitude);
+    }
+  }, [userLocation, updateLocation]);
 
   const crime = useCrimeZones(userLocation, {
     enabled: crimeVisible,
@@ -100,20 +108,9 @@ export default function RouteCheckInScreen({ navigation }: any) {
   // Load user data
   useEffect(() => {
     getStoredUserData().then(d => {
-      if (d) { setUserId(d.phone || null); setUserName(d.name || 'Unknown'); }
+      if (d) { /* userId/userName now live in SOSProvider */ }
     });
   }, []);
-
-  // ── SOS with background support ───────────────────────────────────────────
-  const { sosState, triggerSOS, cancelSOS } = useSOSWithBackground({
-    userId,
-    userName,
-    locationRef: userLocationRef,
-    onResult:    (result) => setPoliceResult(result),
-    onLoading:   (v) => setPoliceLoading(v),
-    onShowBanner: () => setShowPoliceBanner(true),
-    onCheckinArrived: () => void handleStop('COMPLETED'),
-  });
 
   const postMap = useCallback((msg: object) => {
     webViewRef.current?.postMessage(JSON.stringify(msg));
@@ -162,8 +159,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
     postMap({ type: 'route', points: pts.map(p => ({ lat: p.latitude, lng: p.longitude })) });
   };
 
-
-  // Sync mapHTML with userLocation from context
+  // Sync map with location
   useEffect(() => {
     if (userLocation && !initialMapSet.current) {
       setMapHTML(buildLeafletHTML(userLocation.latitude, userLocation.longitude, { enableRoute: true, zoom: 15 }));
@@ -198,13 +194,11 @@ export default function RouteCheckInScreen({ navigation }: any) {
     const ci = { destination, estimatedTime: parseInt(estimatedTime, 10), startTime: Date.now(), routeId };
     setActiveCheckIn(ci);
 
-    // ★ Schedule background notification that fires when ETA expires
     const etaMs = Date.now() + ci.estimatedTime * 60 * 1000;
     await scheduleCheckinExpiryNotification(destination, etaMs);
   };
 
   const handleStop = async (status: 'COMPLETED' | 'CANCELLED' = 'COMPLETED') => {
-    // ★ Cancel the scheduled background notification
     await cancelCheckinExpiryNotification();
 
     if (activeCheckIn?.routeId) {
@@ -219,7 +213,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
     postMap({ type: 'clear' });
   };
 
-  // Countdown timer (foreground only — background handled by scheduled notification)
+  // Countdown timer
   useEffect(() => {
     if (!activeCheckIn) { setTimeRemainingSec(null); return; }
 
@@ -230,11 +224,8 @@ export default function RouteCheckInScreen({ navigation }: any) {
       const rem     = total - elapsed;
       setTimeRemainingSec(rem > 0 ? rem : 0);
 
-      // Foreground late SOS — trigger once
       if (rem <= 0 && !hasTriggered) {
         hasTriggered = true;
-        // Give 60s grace then trigger SOS (notification already showed at 0)
-        // The user can cancel via the notification or the modal below
         triggerSOS(`Check-in ETA expired for "${activeCheckIn.destination}"`);
       }
     };
@@ -256,8 +247,6 @@ export default function RouteCheckInScreen({ navigation }: any) {
     { id: 3, name: 'Hospital',         latitude: 26.1533, longitude: 91.7441 },
     { id: 4, name: 'Railway Station',  latitude: 26.1848, longitude: 91.7469 },
   ];
-
-
 
   return (
     <View style={st.container}>
@@ -294,8 +283,8 @@ export default function RouteCheckInScreen({ navigation }: any) {
               <Text style={st.mapBadgeText}>{locationGranted ? 'Live · OSM' : 'No location'}</Text>
             </View>
             <TouchableOpacity style={st.recenterMapBtn} onPress={() => {
-              if (!userLocationRef.current) return;
-              postMap({ type: 'center', lat: userLocationRef.current.latitude, lng: userLocationRef.current.longitude, zoom: 15 });
+              if (!userLocation) return;
+              postMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude, zoom: 15 });
             }}>
               <Ionicons name="locate" size={17} color={colors.primary} />
             </TouchableOpacity>
@@ -389,7 +378,6 @@ export default function RouteCheckInScreen({ navigation }: any) {
               ))}
             </View>
 
-            {/* Crime & route info */}
             {destLocation && (
               <View style={st.routeInfo}>
                 <Ionicons name="navigate" size={13} color={colors.primary} />
@@ -438,8 +426,8 @@ export default function RouteCheckInScreen({ navigation }: any) {
               <Text style={st.startBtnText}>Start Check-In</Text>
             </TouchableOpacity>
             <TouchableOpacity style={st.recenterBtn} onPress={() => {
-              if (!userLocationRef.current) return;
-              postMap({ type: 'center', lat: userLocationRef.current.latitude, lng: userLocationRef.current.longitude, zoom: 15 });
+              if (!userLocation) return;
+              postMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude, zoom: 15 });
             }}>
               <Ionicons name="locate-outline" size={17} color={colors.text} />
               <Text style={st.recenterBtnText}>Recenter Map</Text>
@@ -503,7 +491,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
         </View>
       )}
 
-      {/* ── Auto-SOS countdown modal (foreground) ── */}
+      {/* SOS countdown modal — works on this screen because sosState is global */}
       <Modal transparent visible={sosState.visible} animationType="fade">
         <View style={st.modalBg}>
           <View style={st.modalCard}>
@@ -619,13 +607,6 @@ const st = StyleSheet.create({
   },
   crimeInfoText: { ...typography.caption, color: colors.textSecondary },
   crimeInfoSub:  { ...typography.caption, color: colors.muted, marginTop: spacing.xs },
-  bgNoticeBox:  {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: spacing.md,
-    backgroundColor: colors.primary + '10', borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
-    borderWidth: 1, borderColor: colors.primary + '25',
-  },
-  bgNoticeText: { flex: 1, fontSize: 12, color: colors.primary, fontFamily: 'Manrope_500Medium' },
   histCard:     {
     backgroundColor: colors.surface, borderRadius: borderRadius.md,
     borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md,
@@ -676,7 +657,6 @@ const st = StyleSheet.create({
   },
   cancelCheckinText: { ...typography.body, color: colors.text, fontFamily: 'Manrope_600SemiBold' },
   banner:        { position: 'absolute', bottom: 20, left: spacing.lg, right: spacing.lg, zIndex: 50 },
-  // Modal
   modalBg:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   modalCard:     {
     backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.xl,

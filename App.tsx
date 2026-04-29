@@ -11,10 +11,9 @@ import {
 } from '@expo-google-fonts/manrope';
 import RootNavigator from './navigation/RootNavigator';
 import { LocationProvider } from './context/LocationContext';
+import { SOSProvider } from './context/SOSContext';
 
 // ── Global Error Boundary ──────────────────────────────────────────────────────────────
-// Catches any JS render error and shows it on-screen instead of a blank page.
-// This is critical for diagnosing issues during development.
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
@@ -70,7 +69,6 @@ function AppInner() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
-    console.log('[App] Waiting for fonts...');
     return (
       <View style={styles.splash}>
         <ActivityIndicator size="large" color="#7C3AED" />
@@ -82,12 +80,19 @@ function AppInner() {
   return (
     <GestureHandlerRootView style={styles.flex}>
       <LocationProvider>
-        <SafeAreaProvider>
-          <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-            <RootNavigator />
-            <StatusBar style="dark" backgroundColor="#FAFBFC" />
-          </SafeAreaView>
-        </SafeAreaProvider>
+        {/*
+          SOSProvider must be INSIDE LocationProvider so keyword detection
+          and the SOS countdown are always mounted — no matter which screen
+          is active or whether the app is in the background.
+        */}
+        <SOSProvider>
+          <SafeAreaProvider>
+            <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+              <RootNavigator />
+              <StatusBar style="dark" backgroundColor="#FAFBFC" />
+            </SafeAreaView>
+          </SafeAreaProvider>
+        </SOSProvider>
       </LocationProvider>
     </GestureHandlerRootView>
   );

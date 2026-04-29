@@ -6,48 +6,44 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocation } from '../context/LocationContext';
+import { useSOSContextFull } from '../context/SOSContext';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { useSensorFusion } from '../hooks/useSensorFusion';
 import { useBLEMesh } from '../hooks/useBLEMesh';
 import { useHeartbeat } from '../hooks/useHeartbeat';
 import { useCrimeZones } from '../hooks/useCrimeZones';
 import { useSafetyTracking } from '../hooks/useSafetyTracking';
-import { useSOSWithBackground } from '../hooks/useSOSWithBackground';
-import {
-  EdgeImpulseWebView,
-  EIWebViewHandle,
-  useEdgeImpulseKeywordDetection,
-} from '../hooks/useEdgeImpulseKeywordDetection';
 import { logSensorEvent } from '../services/sensorDb';
-import type { PoliceSMSResult } from '../services/policeSOS';
 import PoliceAlertBanner from '../components/PoliceAlertBanner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildLeafletHTML } from '../utils/buildLeafletHTML';
 
 const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { showPulse: true, zoom: 16 });
 
-
 export default function HomeMapScreen({ navigation }: any) {
   const { userLocation, locationGranted } = useLocation();
-  const [userId, setUserId] = useState<string | null>(null);
+
+  // ── Global SOS context (keyword detection + countdown live here now) ──────
+  const {
+    sosState,
+    triggerSOS,
+    cancelSOS,
+    policeResult,
+    policeLoading,
+    showPoliceBanner,
+    setShowPoliceBanner,
+    keywordState,
+    updateLocation,
+  } = useSOSContextFull();
+
+  const [userId, setUserId]   = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Unknown');
-  // locationGranted is now provided by useLocation context
   const [mapHTML, setMapHTML] = useState(DEFAULT_HTML);
   const initialMapSet = useRef(false);
   const [crimeVisible, setCrimeVisible] = useState(true);
   const [selectedCrimeLabel, setSelectedCrimeLabel] = useState<string | null>(null);
 
-  // ★ KEY FIX: userLocationRef always holds fresh GPS — passed to SOS hook
-  //   so the setInterval closure in useSOSWithBackground never sees stale null.
-  const userLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
-
-  const [policeLoading, setPoliceLoading] = useState(false);
-  const [policeResult, setPoliceResult] = useState<PoliceSMSResult | null>(null);
-  const [showPoliceBanner, setShowPoliceBanner] = useState(false);
-
-  // Removed unused locationWatcherRef
   const mapWebViewRef = useRef<WebView>(null);
-  const eiWebViewRef = useRef<EIWebViewHandle>(null);
   const prevMotion = useRef({ isFalling: false, impactDetected: false, isShaking: false, shakeCount: 0 });
   const pPeak = useRef(false);
 
@@ -63,31 +59,6 @@ export default function HomeMapScreen({ navigation }: any) {
 
   const { session, triggerManualSOS } = useSafetyTracking(userLocation, crime.zones);
 
-  // ── SOS with background support ───────────────────────────────────────────
-  const { sosState, triggerSOS, cancelSOS } = useSOSWithBackground({
-    userId,
-    userName,
-    locationRef: userLocationRef,           // ← ref, not state
-    onResult: (result) => setPoliceResult(result),
-    onLoading: (v) => setPoliceLoading(v),
-    onShowBanner: () => setShowPoliceBanner(true),
-  });
-
-  // ── Keyword detection ─────────────────────────────────────────────────────
-  const onKeywordDetected = useCallback((confidence: number, label: string) => {
-    if (userId) {
-      logSensorEvent(userId, 'keyword_detected',
-        { keyword: label, confidence, model: 'edge_impulse' },
-        userLocationRef.current?.latitude ?? null,
-        userLocationRef.current?.longitude ?? null).catch(() => { });
-    }
-    triggerManualSOS(`keyword detected (${label})`);
-    triggerSOS(`🎤 Keyword detected: "${label}" (${(confidence * 100).toFixed(0)}% confidence)`);
-  }, [userId, triggerManualSOS, triggerSOS]);
-
-  const { state: keywordState, handleModelReady, handleResult } =
-    useEdgeImpulseKeywordDetection(true, onKeywordDetected, eiWebViewRef);
-
   useHeartbeat(userId, userLocation?.latitude ?? null, userLocation?.longitude ?? null, !!userId);
 
   // Load user data
@@ -101,6 +72,13 @@ export default function HomeMapScreen({ navigation }: any) {
     });
   }, []);
 
+  // ★ Push fresh GPS into the global SOS context so SMS always has latest coords
+  useEffect(() => {
+    if (userLocation) {
+      updateLocation(userLocation.latitude, userLocation.longitude);
+    }
+  }, [userLocation, updateLocation]);
+
   const postToMap = useCallback((msg: object) => {
     mapWebViewRef.current?.postMessage(JSON.stringify(msg));
   }, []);
@@ -112,8 +90,6 @@ export default function HomeMapScreen({ navigation }: any) {
     }
   }, [crime.zones, crimeVisible, postToMap]);
 
-
-  // Sync mapHTML with userLocation from context
   useEffect(() => {
     if (userLocation && !initialMapSet.current) {
       setMapHTML(buildLeafletHTML(userLocation.latitude, userLocation.longitude, { showPulse: true, zoom: 16 }));
@@ -131,21 +107,21 @@ export default function HomeMapScreen({ navigation }: any) {
       Vibration.vibrate([0, 200, 100, 200]);
       if (userId) logSensorEvent(userId, 'fall_detected',
         { magnitude: sensors.accelerometer.magnitude },
-        userLocationRef.current?.latitude ?? null,
-        userLocationRef.current?.longitude ?? null).catch(() => { });
+        userLocation?.latitude ?? null,
+        userLocation?.longitude ?? null).catch(() => {});
       triggerSOS('📱 Fall detected — impact registered');
     }
     if (!p.isShaking && m.isShaking) {
       Vibration.vibrate(400);
       if (userId) logSensorEvent(userId, 'shake_detected', { count: m.shakeCount },
-        userLocationRef.current?.latitude ?? null,
-        userLocationRef.current?.longitude ?? null).catch(() => { });
+        userLocation?.latitude ?? null,
+        userLocation?.longitude ?? null).catch(() => {});
       triggerSOS('📳 Rapid shaking detected');
     }
     if (!pPeak.current && sensors.mic.peakDetected && userId) {
       logSensorEvent(userId, 'audio_peak', { level: sensors.mic.level },
-        userLocationRef.current?.latitude ?? null,
-        userLocationRef.current?.longitude ?? null).catch(() => { });
+        userLocation?.latitude ?? null,
+        userLocation?.longitude ?? null).catch(() => {});
     }
     pPeak.current = sensors.mic.peakDetected;
     prevMotion.current = m;
@@ -167,14 +143,8 @@ export default function HomeMapScreen({ navigation }: any) {
 
   return (
     <View style={s.container}>
-      {/* Hidden Edge Impulse WebView */}
-      <EdgeImpulseWebView
-        ref={eiWebViewRef}
-        modelFile="edge-impulse-standalone-all.js"
-        onReady={handleModelReady}
-        onResult={handleResult}
-        onError={(msg) => console.warn('[EI Classifier]', msg)}
-      />
+      {/* NOTE: EdgeImpulseWebView is now rendered inside SOSProvider (App.tsx).
+          No duplicate here — keyword detection runs globally. */}
 
       {/* Leaflet map */}
       <WebView
@@ -256,8 +226,8 @@ export default function HomeMapScreen({ navigation }: any) {
           <MaterialCommunityIcons name="monitor-dashboard" size={20} color={colors.text} />
         </TouchableOpacity>
         <TouchableOpacity style={s.quickBtn} onPress={() => {
-          if (userLocationRef.current) {
-            postToMap({ type: 'center', lat: userLocationRef.current.latitude, lng: userLocationRef.current.longitude });
+          if (userLocation) {
+            postToMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude });
           }
         }}>
           <Ionicons name="locate" size={20} color={colors.primary} />
@@ -273,7 +243,11 @@ export default function HomeMapScreen({ navigation }: any) {
       {/* Police alert banner */}
       {showPoliceBanner && (
         <View style={s.banner}>
-          <PoliceAlertBanner result={policeResult} loading={policeLoading} onDismiss={() => setShowPoliceBanner(false)} />
+          <PoliceAlertBanner
+            result={policeResult}
+            loading={policeLoading}
+            onDismiss={() => setShowPoliceBanner(false)}
+          />
         </View>
       )}
 
@@ -318,7 +292,7 @@ export default function HomeMapScreen({ navigation }: any) {
         )}
       </View>
 
-      {/* ── Auto-SOS countdown modal (foreground) ── */}
+      {/* ── SOS countdown modal — shown on HomeMap when app is in foreground here ── */}
       <Modal transparent visible={sosState.visible} animationType="fade">
         <View style={s.modalBg}>
           <View style={s.modalCard}>
@@ -326,17 +300,13 @@ export default function HomeMapScreen({ navigation }: any) {
             <Text style={s.modalTitle}>SOS Alert in {sosState.countdown}s</Text>
             <Text style={s.modalReason}>{sosState.reason}</Text>
             <Text style={s.modalSub}>Police & emergency contacts will be alerted automatically</Text>
-
-            {/* Countdown ring */}
             <View style={s.countdownRing}>
               <Text style={s.countdownNum}>{sosState.countdown}</Text>
             </View>
-
             <TouchableOpacity style={s.cancelBtn} onPress={cancelSOS}>
               <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
               <Text style={s.cancelBtnText}>I'm Safe — Cancel SOS</Text>
             </TouchableOpacity>
-
             <Text style={s.modalHint}>
               Or press "I'm Safe" in the notification if app goes to background
             </Text>
@@ -410,8 +380,6 @@ const s = StyleSheet.create({
   legendDot: { width: 10, height: 10, borderRadius: 999 },
   hintSmall: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
   disclaimer: { ...typography.caption, color: colors.muted, marginTop: spacing.xs, textAlign: 'center' },
-
-  // Modal styles
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   modalCard: {
     backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.xl,
@@ -433,5 +401,4 @@ const s = StyleSheet.create({
   },
   cancelBtnText: { color: '#fff', fontFamily: 'Manrope_700Bold', fontSize: 16 },
   modalHint: { ...typography.caption, color: colors.muted, marginTop: spacing.lg, textAlign: 'center' },
-
 });
