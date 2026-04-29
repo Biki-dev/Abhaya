@@ -4,7 +4,7 @@ import { Server as HttpServer } from 'http';
 export function setupSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: '*',
+      origin: "https://rakhshitahtml.netlify.app",
       methods: ['GET', 'POST'],
     },
   });

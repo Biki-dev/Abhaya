@@ -236,7 +236,7 @@ export default function HomeMapScreen({ navigation }: any) {
           <TouchableOpacity
             style={s.safetyPill}
             onPress={async () => {
-              const base = 'http://127.0.0.1:5500/web-viewer/index.html';
+              const base = 'https://rakhshitahtml.netlify.app';
               const url = `${base}/view/?s=${session.id}`;
               await Share.share({
                 message: `I'm in a crime zone. Follow my live location here: ${url}`,
