@@ -146,7 +146,7 @@ export default function SettingsScreen({ navigation }: any) {
   const handleLogout = () => {
     Alert.alert(
       'Log Out',
-      'Are you sure you want to log out of Saathi?',
+      'Are you sure you want to log out of Abhaya?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -334,7 +334,7 @@ export default function SettingsScreen({ navigation }: any) {
         {[
           { icon: 'person-circle-outline',      label: 'View Full Profile' },
           { icon: 'shield-checkmark-outline',   label: 'Privacy & Security' },
-          { icon: 'information-circle-outline', label: 'About Saathi' },
+          { icon: 'information-circle-outline', label: 'About Abhaya' },
           { icon: 'call-outline',               label: 'Contact Support' },
         ].map(({ icon, label }) => (
           <TouchableOpacity key={label} style={styles.menuItem}>
@@ -357,7 +357,7 @@ export default function SettingsScreen({ navigation }: any) {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.versionText}>Saathi v1.0.0</Text>
+        <Text style={styles.versionText}>Abhaya v1.0.0</Text>
         <Text style={styles.copyrightText}>Made for your safety</Text>
       </View>
     </ScrollView>

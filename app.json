@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Saathi",
-    "slug": "saathi",
+    "name": "Abhaya",
+    "slug": "Abhaya",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,13 +15,13 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "locationAlwaysAndWhenInUsePermissionAlert": "Saathi needs access to your location for safety features.",
-        "locationWhenInUsePermissionAlert": "Saathi needs access to your location while using the app.",
+        "locationAlwaysAndWhenInUsePermissionAlert": "Abhaya needs access to your location for safety features.",
+        "locationWhenInUsePermissionAlert": "Abhaya needs access to your location while using the app.",
         "microphone": {
-          "microphonePermissionAlert": "Saathi needs microphone access to record emergency audio."
+          "microphonePermissionAlert": "Abhaya needs microphone access to record emergency audio."
         }
       },
-      "bundleIdentifier": "com.trialssd.saathi"
+      "bundleIdentifier": "com.trialssd.Abhaya"
     },
     "android": {
       "adaptiveIcon": {
@@ -43,7 +43,7 @@
         "android.permission.FOREGROUND_SERVICE_MICROPHONE",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.trialssd.saathi",
+      "package": "com.trialssd.Abhaya",
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
@@ -57,8 +57,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermissionAlert": "Saathi needs access to your location for safety features.",
-          "locationWhenInUsePermissionAlert": "Saathi needs access to your location while using the app."
+          "locationAlwaysAndWhenInUsePermissionAlert": "Abhaya needs access to your location for safety features.",
+          "locationWhenInUsePermissionAlert": "Abhaya needs access to your location while using the app."
         }
       ],
       "expo-asset"

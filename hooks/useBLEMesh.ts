@@ -52,10 +52,10 @@ export function useBLEMesh(enabled: boolean = false) {
 
   // ── get or create stable device ID ───────────────────────────────────────
   const getMyId = useCallback(async () => {
-    let id = await AsyncStorage.getItem('saathi_mesh_id');
+    let id = await AsyncStorage.getItem('Abhaya_mesh_id');
     if (!id) {
-      id = 'saathi_' + Math.random().toString(36).substring(2, 10);
-      await AsyncStorage.setItem('saathi_mesh_id', id);
+      id = 'Abhaya_' + Math.random().toString(36).substring(2, 10);
+      await AsyncStorage.setItem('Abhaya_mesh_id', id);
     }
     myIdRef.current = id;
     setState(s => ({ ...s, myId: id! }));
@@ -65,13 +65,13 @@ export function useBLEMesh(enabled: boolean = false) {
   // ── SIMULATED: in a real build replace this with BLE scan + advertise ────
   // react-native-ble-plx pattern:
   //   manager.startDeviceScan(null, null, (error, device) => { ... });
-  //   manager.startAdvertising({ serviceUUIDs: ['SAATHI-MESH'] }, ...);
+  //   manager.startAdvertising({ serviceUUIDs: ['Abhaya-MESH'] }, ...);
   const simulatePeerDiscovery = useCallback(() => {
     // Simulates 0-3 nearby peers being detected
     const count = Math.floor(Math.random() * 4);
     const fakePeers: MeshPeer[] = Array.from({ length: count }, (_, i) => ({
       id:         `peer_${i}_${Math.random().toString(36).substring(2, 6)}`,
-      name:       `Saathi User ${i + 1}`,
+      name:       `Abhaya User ${i + 1}`,
       rssi:       -40 - Math.floor(Math.random() * 60),
       lastSeen:   Date.now(),
       isRelaying: false,

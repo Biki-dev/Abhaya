@@ -92,7 +92,7 @@ export default function HomeMapScreen({ navigation }: any) {
 
   // Load user data
   useEffect(() => {
-    AsyncStorage.getItem('saathiUserData').then(raw => {
+    AsyncStorage.getItem('AbhayaUserData').then(raw => {
       if (raw) {
         const data = JSON.parse(raw) as any;
         setUserId(data.phone ?? null);

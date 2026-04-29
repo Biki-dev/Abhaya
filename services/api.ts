@@ -144,7 +144,7 @@ export async function getUserRouteHistory(userPhone: string) {
 }
 
 export async function getStoredUserPhone() {
-  const dataString = await AsyncStorage.getItem('saathiUserData');
+  const dataString = await AsyncStorage.getItem('AbhayaUserData');
   if (!dataString) {
     return null;
   }
@@ -154,7 +154,7 @@ export async function getStoredUserPhone() {
 }
 
 export async function getStoredUserData() {
-  const dataString = await AsyncStorage.getItem('saathiUserData');
+  const dataString = await AsyncStorage.getItem('AbhayaUserData');
   if (!dataString) {
     return null;
   }
@@ -179,7 +179,7 @@ export async function getStoredUserData() {
  */
 export async function setManualBackendIp(ip: string) {
   const baseUrl = ip.startsWith('http') ? ip : `http://${ip}:4000`;
-  await AsyncStorage.setItem('saathi_api_base', baseUrl);
+  await AsyncStorage.setItem('Abhaya_api_base', baseUrl);
   console.log('[API] Manual backend IP set to:', baseUrl);
 }
 
@@ -206,6 +206,6 @@ export async function logoutUser(phone: string) {
 }
 
 export async function clearLocalUserData() {
-  await AsyncStorage.removeItem('saathiUserData');
-  await AsyncStorage.removeItem('saathi_emergency_contacts');
+  await AsyncStorage.removeItem('AbhayaUserData');
+  await AsyncStorage.removeItem('Abhaya_emergency_contacts');
 }

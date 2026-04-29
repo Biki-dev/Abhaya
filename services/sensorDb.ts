@@ -1,8 +1,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY      = 'saathi_sensor_events';
-const QUEUE_KEY        = 'saathi_sensor_queue';
+const STORAGE_KEY      = 'Abhaya_sensor_events';
+const QUEUE_KEY        = 'Abhaya_sensor_queue';
 const MAX_LOCAL_EVENTS = 200;
 
 export type SensorEventType =

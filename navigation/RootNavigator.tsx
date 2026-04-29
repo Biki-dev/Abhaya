@@ -39,7 +39,7 @@ export default function RootNavigator() {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const raw = await AsyncStorage.getItem('saathiUserData');
+        const raw = await AsyncStorage.getItem('AbhayaUserData');
         if (raw) {
           const userData = JSON.parse(raw);
 

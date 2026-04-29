@@ -19,7 +19,7 @@ const EI_SOURCE_DIR = path.join(__dirname, '..', 'assets', 'ei');
 
 // Destination folders
 const ANDROID_ASSETS = path.join(__dirname, '..', 'android', 'app', 'src', 'main', 'assets', 'ei');
-const IOS_ASSETS     = path.join(__dirname, '..', 'ios', 'Rakshita', 'ei');  // adjust "Rakshita" to your iOS target name
+const IOS_ASSETS     = path.join(__dirname, '..', 'ios', 'Abhaya', 'ei');  // adjust "Abhaya" to your iOS target name
 
 const FILES = [
   'edge-impulse-standalone-all.js',

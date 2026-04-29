@@ -36,7 +36,7 @@ async function nominatimSearch(q: string): Promise<NominatimItem[]> {
   if (q.trim().length < 3) return [];
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=in`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'SaathiApp/1.0', 'Accept-Language': 'en' } });
+    const r = await fetch(url, { headers: { 'User-Agent': 'AbhayaApp/1.0', 'Accept-Language': 'en' } });
     return await r.json() as NominatimItem[];
   } catch { return []; }
 }

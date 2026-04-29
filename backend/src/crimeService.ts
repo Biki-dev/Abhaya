@@ -1,7 +1,7 @@
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Merges two data sources:
-//   1. Internal SOS events from SensorEvent table (real triggers in Saathi)
+//   1. Internal SOS events from SensorEvent table (real triggers in Abhaya)
 //   2. SafeCity crowd-sourced incident reports (Indian harassment/crime data)
 //
 // Both are aggregated to a ~500 m grid, severity-classified, and returned

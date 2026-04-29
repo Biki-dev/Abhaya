@@ -1,4 +1,4 @@
-// Design System & Theme for Saathi - Professional Minimalist
+// Design System & Theme for Abhaya - Professional Minimalist
 export const colors = {
   // Core theme
   bg: '#FAFBFC',
