@@ -58,7 +58,7 @@ safetyRouter.post('/api/safety-sessions/start', async (req, res) => {
   });
 
   if (!recentSession || parsed.data.reason) {
-    const viewerUrl = process.env.VIEWER_URL || 'https://rakhshitahtml.netlify.app/view';
+    const viewerUrl = process.env.VIEWER_URL || 'https://rakhshitahtml.netlify.app/';
     const trackingLink = `${viewerUrl}?s=${session.id}`;
     const sosReason = parsed.data.reason || 'entered a high-risk zone';
     const message = `SOS! ${user.name} ${sosReason}. Track live location here: ${trackingLink}`;

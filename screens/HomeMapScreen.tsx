@@ -237,7 +237,7 @@ export default function HomeMapScreen({ navigation }: any) {
             style={s.safetyPill}
             onPress={async () => {
               const base = 'https://rakhshitahtml.netlify.app';
-              const url = `${base}/view/?s=${session.id}`;
+              const url = `${base}/?s=${session.id}`;
               await Share.share({
                 message: `I'm in a crime zone. Follow my live location here: ${url}`,
                 url,
