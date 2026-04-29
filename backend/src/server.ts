@@ -5,6 +5,11 @@ import { prisma } from './db.js';
 import { sensorRouter } from './sensorRoutes.js';
 import { contactsRouter } from './contactsRoutes.js';
 import { crimeRouter } from './crimeRoutes.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const upsertUserSchema = z.object({
   phone: z.string().min(10),
@@ -43,7 +48,7 @@ export function startServer() {
   app.use(express.json());
   
   // Serve web-viewer static files
-  const webViewerPath = new URL('../../web-viewer', import.meta.url).pathname;
+  const webViewerPath = join(__dirname, '../../web-viewer');
   app.use('/view', express.static(webViewerPath));
 
   // ── Routers ──────────────────────────────────────────────────────────────
@@ -181,4 +186,22 @@ export function startServer() {
   httpServer.listen(port, '0.0.0.0', () => {
     console.log(`Backend running on http://0.0.0.0:${port}`);
   });
+
+// Global error handlers — prevent crashes in production
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Server] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Server] Uncaught Exception:', error);
+  // Don't exit — Render will restart if needed
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('[Server] SIGTERM received, closing connections...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
 }

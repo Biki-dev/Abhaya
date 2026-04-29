@@ -46,7 +46,7 @@
       "package": "com.trialssd.Abhaya",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+          "apiKey": ""
         }
       }
     },
