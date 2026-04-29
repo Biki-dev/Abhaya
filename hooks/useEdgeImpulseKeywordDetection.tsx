@@ -44,10 +44,9 @@ const DEBUG                     = __DEV__;
 const WINDOW_SAMPLES            = Math.floor(AUDIO_SAMPLE_RATE * (CHUNK_DURATION_MS / 1000));
 
 const EI_BASE_URL = Platform.OS === 'android'
-  ? 'file:///android_asset/ei'
-  : Platform.OS === 'ios'
-    ? `${require('../assets/ei/edge-impulse-standalone-all.js').uri?.split('/').slice(0,-1).join('/') ?? ''}`
-    : 'http://localhost:8082'; 
+  ? 'file:///android_asset/ei'    
+  : 'http://localhost:8082';       
+
 
 // ── Types ──
 export type EIWebViewHandle = {
