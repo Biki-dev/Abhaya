@@ -288,6 +288,7 @@ function mergeFeatures(
   const all = [...internal, ...safecity];
   if (internal.length === 0 || safecity.length === 0) return all;
 
+
   const merged:  CrimeFeature[] = [...internal];
   const absorbed = new Set<number>();
 
@@ -310,14 +311,14 @@ function mergeFeatures(
       }
     }
 
-    if (!tooClose) {
-      absorbed.add(si);
+    if (tooClose) {
+      absorbed.add(si); // mark as absorbed into internal cell
     }
   });
 
   // Add SafeCity cells that weren't absorbed
   safecity.forEach((sf, si) => {
-    if (absorbed.has(si)) merged.push(sf);
+    if (!absorbed.has(si)) merged.push(sf); // push non-absorbed ones
   });
 
   return merged;
