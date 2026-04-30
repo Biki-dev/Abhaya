@@ -17,6 +17,7 @@ import { logSensorEvent } from '../services/sensorDb';
 import PoliceAlertBanner from '../components/PoliceAlertBanner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildLeafletHTML } from '../utils/buildLeafletHTML';
+import { useBLERelay } from '../hooks/useBLERelay';
 
 const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { showPulse: true, zoom: 16 });
 
@@ -42,7 +43,10 @@ export default function HomeMapScreen({ navigation }: any) {
   const initialMapSet = useRef(false);
   const [crimeVisible, setCrimeVisible] = useState(true);
   const [selectedCrimeLabel, setSelectedCrimeLabel] = useState<string | null>(null);
-
+  const { state: meshState } = useBLEMesh(true);
+  const { state: senderState } = useBLEMesh(true);
+  const { state: relayState } = useBLEMesh(true);
+  const { state: nearbySOSCount } = useBLERelay(true);
   const mapWebViewRef = useRef<WebView>(null);
   const prevMotion = useRef({ isFalling: false, impactDetected: false, isShaking: false, shakeCount: 0 });
   const pPeak = useRef(false);
@@ -200,6 +204,22 @@ export default function HomeMapScreen({ navigation }: any) {
         </View>
       </View>
 
+      {meshState.isActive && (
+  <View style={s.meshBar}>
+    <View style={s.meshPill}>
+      <View style={[s.meshDot, relayState.nearbySOSCount > 0 && { backgroundColor: '#EF4444' }]} />
+      <Text style={s.meshText}>
+        {senderState.isBroadcasting
+          ? `📡 SOS Broadcasting (${senderState.packetsSent} packets)`
+          : `🔵 Mesh Relay Active${relayState.packetsRelayed > 0 ? ` · ${relayState.packetsRelayed} relayed` : ''}`
+        }
+      </Text>
+    </View>
+  </View>
+)}
+
+      
+
       {/* Safety session pill */}
       {session && (
         <View style={s.safetyBar}>
@@ -318,6 +338,16 @@ export default function HomeMapScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
+
+meshBar:  { position: 'absolute', top: 136, left: spacing.lg },
+meshPill: {
+  flexDirection: 'row', alignItems: 'center', gap: 6,
+  backgroundColor: 'rgba(59,130,246,0.1)', borderRadius: 999,
+  paddingHorizontal: 12, paddingVertical: 6,
+  borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)',
+},
+meshDot:  { width: 8, height: 8, borderRadius: 4, backgroundColor: '#3B82F6' },
+meshText: { fontSize: 11, color: '#3B82F6', fontFamily: 'Manrope_700Bold' },
   container: { flex: 1, backgroundColor: colors.bg },
   map: { flex: 1, backgroundColor: '#e8e0d8' },
   overlay: { zIndex: 99, backgroundColor: 'rgba(250,251,252,0.93)', justifyContent: 'center', alignItems: 'center' },

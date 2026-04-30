@@ -26,6 +26,7 @@ import {
 } from '../services/sosNotification';
 import { logSensorEvent } from '../services/sensorDb';
 import { sendPoliceSOS, PoliceSMSResult } from '../services/policeSOS';
+import { useBLEMesh } from './useBLEMesh';
 
 const COUNTDOWN_SECS = 5;
 
@@ -59,7 +60,7 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
   const isFgRef        = useRef(AppState.currentState === 'active');
   const reasonRef      = useRef('');
   const countdownRef   = useRef(COUNTDOWN_SECS);
-
+  const { state: meshState, sendSOSViaMesh, stopBroadcast } = useBLEMesh(true);
   // Stable references to callbacks so interval doesn't capture stale closures
   const optsRef = useRef(opts);
   useEffect(() => { optsRef.current = opts; }, [opts]);
@@ -145,6 +146,10 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
         reason,
         timestamp: Date.now(),
       });
+
+      if (loc) {
+  sendSOSViaMesh(loc.latitude, loc.longitude, userId ?? 'unknown');
+}
 
       if (userId && loc) {
         logSensorEvent(userId, 'police_alerted',

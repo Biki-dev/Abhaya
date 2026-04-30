@@ -31,6 +31,8 @@
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-audio-record": "^0.2.2",
+    "react-native-ble-manager": "^12.4.5",
+    "react-native-ble-peripheral": "^2.0.1",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "1.20.1",
     "react-native-reanimated": "~4.1.1",

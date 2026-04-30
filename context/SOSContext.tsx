@@ -29,6 +29,7 @@ import {
 import { useSOSWithBackground, SOSCountdownState } from '../hooks/useSOSWithBackground';
 import { logSensorEvent } from '../services/sensorDb';
 import type { PoliceSMSResult } from '../services/policeSOS';
+import { useBLEMesh } from '../hooks/useBLEMesh';
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 type SOSContextType = {
@@ -68,6 +69,9 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
 
   // ★ Always-fresh location ref — updated by whoever has GPS (HomeMap / sensors)
   const locationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  
+  const { state: meshState, sendSOSViaMesh, stopBroadcast } = useBLEMesh(true);
+
 
   // WebView ref for Edge Impulse audio bridge
   const eiWebViewRef = useRef<EIWebViewHandle>(null);

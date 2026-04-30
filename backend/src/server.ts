@@ -36,6 +36,7 @@ const completeRouteSchema = z.object({
 import { createServer } from 'http';
 import { setupSocket } from './socket.js';
 import { safetyRouter } from './safetyRoutes.js';
+import { meshRouter } from './meshRoutes.js';
 
 export function startServer() {
   const app = express();
@@ -56,6 +57,7 @@ export function startServer() {
   app.use(contactsRouter);
   app.use(crimeRouter);
   app.use(safetyRouter);
+  app.use(meshRouter);
 
   // ── Health ────────────────────────────────────────────────────────────────
   app.get('/health', async (_req, res) => {
