@@ -37,6 +37,7 @@ import { createServer } from 'http';
 import { setupSocket } from './socket.js';
 import { safetyRouter } from './safetyRoutes.js';
 import { meshRouter } from './meshRoutes.js';
+import { sosRouter } from './sosRoutes.js';
 
 export function startServer() {
   const app = express();
@@ -58,6 +59,7 @@ export function startServer() {
   app.use(crimeRouter);
   app.use(safetyRouter);
   app.use(meshRouter);
+  app.use(sosRouter);
 
   // ── Health ────────────────────────────────────────────────────────────────
   app.get('/health', async (_req, res) => {
