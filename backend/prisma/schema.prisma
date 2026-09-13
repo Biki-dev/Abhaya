@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int                @id @default(autoincrement())
+  phone            String             @unique
+  name             String
+  email            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  routes           RouteHistory[]
+  sensorEvents     SensorEvent[]
+  heartbeat        Heartbeat?
+  emergencyContacts EmergencyContact[]
+  sessions         Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model EmergencyContact {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RouteHistory {
+  id               Int         @id @default(autoincrement())
+  userId           Int
+  destinationName  String
+  startLatitude    Float
+  startLongitude   Float
+  endLatitude      Float
+  endLongitude     Float
+  estimatedMinutes Int
+  startedAt        DateTime
+  completedAt      DateTime?
+  status           RouteStatus @default(ACTIVE)
+  createdAt        DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model SensorEvent {
+  id        String   @id
+  userId    Int
+  type      String
+  lat       Float?
+  lng       Float?
+  data      Json     @default("{}")
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([type])
+}
+
+model Heartbeat {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  lat       Float?
+  lng       Float?
+  timestamp BigInt
+  updatedAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum RouteStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
