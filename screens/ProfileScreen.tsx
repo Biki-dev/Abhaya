@@ -26,12 +26,45 @@ const EMPTY_PROFILE: UserProfile = {
 };
 
 type FieldKey = 'name' | 'email' | 'gender' | 'dateOfBirth' | 'bloodGroup' | 'address' | 'city' | 'guardianName' | 'guardianPhone';
+type FieldErrors = Partial<Record<FieldKey, string>>;
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[0-9\s()-]{7,20}$/;
+const BLOOD_GROUPS = new Set(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']);
+
+function validateProfile(profile: UserProfile): FieldErrors {
+  const errors: FieldErrors = {};
+  const name = profile.name.trim();
+  const email = profile.email.trim();
+  const bloodGroup = profile.bloodGroup.trim().toUpperCase();
+  const dateOfBirth = profile.dateOfBirth.trim();
+  const guardianPhone = profile.guardianPhone.trim();
+
+  if (!name) errors.name = 'Full name is required.';
+  else if (name.length > 100) errors.name = 'Name must be 100 characters or less.';
+  if (email && !EMAIL_PATTERN.test(email)) errors.email = 'Enter a valid email address.';
+  if (bloodGroup && !BLOOD_GROUPS.has(bloodGroup)) errors.bloodGroup = 'Use a valid group: A+, A-, B+, B-, AB+, AB-, O+, or O-.';
+  if (dateOfBirth) {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateOfBirth);
+    const parsedDate = match ? new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])) : null;
+    if (!match || !parsedDate || parsedDate.getDate() !== Number(match[1]) || parsedDate.getMonth() !== Number(match[2]) - 1 || parsedDate > new Date()) {
+      errors.dateOfBirth = 'Use a valid past date in DD/MM/YYYY format.';
+    }
+  }
+  if (guardianPhone && !PHONE_PATTERN.test(guardianPhone)) errors.guardianPhone = 'Enter a valid guardian phone number.';
+  if (profile.gender.trim().length > 40) errors.gender = 'Gender must be 40 characters or less.';
+  if (profile.address.trim().length > 250) errors.address = 'Address must be 250 characters or less.';
+  if (profile.city.trim().length > 100) errors.city = 'City must be 100 characters or less.';
+  if (profile.guardianName.trim().length > 100) errors.guardianName = 'Guardian name must be 100 characters or less.';
+  return errors;
+}
 
 export default function ProfileScreen({ navigation }: any) {
   const [profile, setProfile] = useState<UserProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const loadProfile = useCallback(async () => {
     const local = await getStoredUserProfile();
@@ -52,12 +85,15 @@ export default function ProfileScreen({ navigation }: any) {
 
   const updateField = (field: FieldKey, value: string) => {
     setDirty(true);
+    setErrors((current) => ({ ...current, [field]: undefined }));
     setProfile((current) => ({ ...current, [field]: value }));
   };
 
   const handleSave = async () => {
-    if (!profile.name.trim()) {
-      Alert.alert('Name required', 'Please enter your name before saving.');
+    const validationErrors = validateProfile(profile);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      Alert.alert('Check your details', 'Please correct the highlighted fields before saving.');
       return;
     }
     setSaving(true);
@@ -68,7 +104,7 @@ export default function ProfileScreen({ navigation }: any) {
         email: profile.email.trim(),
         gender: profile.gender.trim(),
         dateOfBirth: profile.dateOfBirth.trim(),
-        bloodGroup: profile.bloodGroup.trim(),
+        bloodGroup: profile.bloodGroup.trim().toUpperCase(),
         address: profile.address.trim(),
         city: profile.city.trim(),
         guardianName: profile.guardianName.trim(),
@@ -76,9 +112,10 @@ export default function ProfileScreen({ navigation }: any) {
       });
       setProfile({ ...EMPTY_PROFILE, ...saved });
       setDirty(false);
+      setErrors({});
       Alert.alert('Profile saved', 'Your profile details have been updated successfully.');
     } catch (error: any) {
-      Alert.alert('Saved offline', error?.message ?? 'Could not reach the server. Your changes will sync when you are online.');
+      Alert.alert('Could not save profile', error?.message ?? 'Please check your details and try again.');
     } finally {
       setSaving(false);
     }
@@ -113,23 +150,23 @@ export default function ProfileScreen({ navigation }: any) {
 
         <Text style={styles.sectionTitle}>Personal details</Text>
         <View style={styles.card}>
-          <Field label="Full name" value={profile.name} onChangeText={(v) => updateField('name', v)} placeholder="Your full name" />
-          <Field label="Email address" value={profile.email} onChangeText={(v) => updateField('email', v)} placeholder="you@example.com" keyboardType="email-address" />
-          <Field label="Gender" value={profile.gender} onChangeText={(v) => updateField('gender', v)} placeholder="e.g. Female, Male, Non-binary" />
-          <Field label="Date of birth" value={profile.dateOfBirth} onChangeText={(v) => updateField('dateOfBirth', v)} placeholder="DD/MM/YYYY" />
-          <Field label="Blood group" value={profile.bloodGroup} onChangeText={(v) => updateField('bloodGroup', v)} placeholder="e.g. O+" last />
+          <Field label="Full name" value={profile.name} error={errors.name} onChangeText={(v) => updateField('name', v)} placeholder="Your full name" />
+          <Field label="Email address" value={profile.email} error={errors.email} onChangeText={(v) => updateField('email', v)} placeholder="you@example.com" keyboardType="email-address" />
+          <Field label="Gender" value={profile.gender} error={errors.gender} onChangeText={(v) => updateField('gender', v)} placeholder="e.g. Female, Male, Non-binary" />
+          <Field label="Date of birth" value={profile.dateOfBirth} error={errors.dateOfBirth} onChangeText={(v) => updateField('dateOfBirth', v)} placeholder="DD/MM/YYYY" />
+          <Field label="Blood group" value={profile.bloodGroup} error={errors.bloodGroup} onChangeText={(v) => updateField('bloodGroup', v)} placeholder="e.g. O+" last />
         </View>
 
         <Text style={styles.sectionTitle}>Address</Text>
         <View style={styles.card}>
-          <Field label="Address" value={profile.address} onChangeText={(v) => updateField('address', v)} placeholder="House number, street, locality" multiline />
-          <Field label="City" value={profile.city} onChangeText={(v) => updateField('city', v)} placeholder="Your city" last />
+          <Field label="Address" value={profile.address} error={errors.address} onChangeText={(v) => updateField('address', v)} placeholder="House number, street, locality" multiline />
+          <Field label="City" value={profile.city} error={errors.city} onChangeText={(v) => updateField('city', v)} placeholder="Your city" last />
         </View>
 
         <Text style={styles.sectionTitle}>Guardian details</Text>
         <View style={styles.card}>
-          <Field label="Guardian name" value={profile.guardianName} onChangeText={(v) => updateField('guardianName', v)} placeholder="Trusted guardian's name" />
-          <Field label="Guardian phone" value={profile.guardianPhone} onChangeText={(v) => updateField('guardianPhone', v)} placeholder="+91XXXXXXXXXX" keyboardType="phone-pad" last />
+          <Field label="Guardian name" value={profile.guardianName} error={errors.guardianName} onChangeText={(v) => updateField('guardianName', v)} placeholder="Trusted guardian's name" />
+          <Field label="Guardian phone" value={profile.guardianPhone} error={errors.guardianPhone} onChangeText={(v) => updateField('guardianPhone', v)} placeholder="+91XXXXXXXXXX" keyboardType="phone-pad" last />
         </View>
 
         <TouchableOpacity style={[styles.saveButton, (!dirty || saving) && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
@@ -141,8 +178,8 @@ export default function ProfileScreen({ navigation }: any) {
   );
 }
 
-function Field({ label, value, onChangeText, placeholder, keyboardType, multiline, last }: { label: string; value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: any; multiline?: boolean; last?: boolean }) {
-  return <View style={[styles.field, last && styles.fieldLast]}><Text style={styles.label}>{label}</Text><TextInput style={[styles.input, multiline && styles.multiline]} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.muted} keyboardType={keyboardType} multiline={multiline} /></View>;
+function Field({ label, value, error, onChangeText, placeholder, keyboardType, multiline, last }: { label: string; value: string; error?: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: any; multiline?: boolean; last?: boolean }) {
+  return <View style={[styles.field, last && styles.fieldLast]}><Text style={styles.label}>{label}</Text><TextInput style={[styles.input, multiline && styles.multiline, error && styles.inputError]} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.muted} keyboardType={keyboardType} multiline={multiline} /><Text style={[styles.errorText, !error && styles.hiddenError]}>{error || ' '}</Text></View>;
 }
 
 const styles = StyleSheet.create({
@@ -154,6 +191,6 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   hero: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg }, avatar: { width: 64, height: 64, borderRadius: 22, backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center', marginRight: spacing.md }, avatarText: { fontSize: 26, color: colors.primary, fontFamily: 'Manrope_700Bold' }, heroCopy: { flex: 1 }, profileName: { ...typography.heading, color: colors.text }, profilePhone: { ...typography.bodySmall, color: colors.muted, marginTop: 3 },
   registrationCard: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.xl, ...shadows.xs }, registrationIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.primary + '14', alignItems: 'center', justifyContent: 'center', marginRight: spacing.md }, registrationLabel: { ...typography.caption, color: colors.muted }, registrationValue: { ...typography.body, color: colors.text, marginTop: 2 }, readOnlyPill: { marginLeft: 'auto', backgroundColor: colors.bg, borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }, readOnlyText: { ...typography.caption, color: colors.textSecondary },
-  sectionTitle: { ...typography.subheading, color: colors.text, marginBottom: spacing.sm, marginTop: spacing.sm }, card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, marginBottom: spacing.lg }, field: { paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border }, fieldLast: { borderBottomWidth: 0 }, label: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs }, input: { ...typography.body, color: colors.text, padding: 0, minHeight: 24 }, multiline: { minHeight: 56, textAlignVertical: 'top' },
+  sectionTitle: { ...typography.subheading, color: colors.text, marginBottom: spacing.sm, marginTop: spacing.sm }, card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, marginBottom: spacing.lg }, field: { paddingTop: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border }, fieldLast: { borderBottomWidth: 0 }, label: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs }, input: { ...typography.body, color: colors.text, padding: 0, minHeight: 24 }, inputError: { color: colors.danger }, multiline: { minHeight: 56, textAlignVertical: 'top' }, errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs, marginBottom: spacing.xs }, hiddenError: { color: 'transparent' },
   saveButton: { minHeight: 52, borderRadius: borderRadius.lg, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }, saveButtonDisabled: { backgroundColor: colors.textSecondary }, saveText: { ...typography.body, color: '#fff', fontFamily: 'Manrope_700Bold' }, syncHint: { ...typography.caption, color: colors.muted, textAlign: 'center', marginTop: spacing.md },
 });

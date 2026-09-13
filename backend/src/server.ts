@@ -11,21 +11,32 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
+const DATE_OF_BIRTH_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+const PHONE_PATTERN = /^\+?[0-9\s()-]{7,20}$/;
+
+function isValidPastDate(value: string) {
+  const match = DATE_OF_BIRTH_PATTERN.exec(value);
+  if (!match) return false;
+  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  return date.getDate() === Number(match[1]) && date.getMonth() === Number(match[2]) - 1 && date <= new Date();
+}
+
 const upsertUserSchema = z.object({
   phone: z.string().min(10),
-  name: z.string().min(1),
-  email: z.string().email().optional().or(z.literal('')),
-  gender: z.string().max(40).optional().or(z.literal('')),
-  dateOfBirth: z.string().max(30).optional().or(z.literal('')),
-  bloodGroup: z.string().max(10).optional().or(z.literal('')),
-  address: z.string().max(250).optional().or(z.literal('')),
-  city: z.string().max(100).optional().or(z.literal('')),
-  guardianName: z.string().max(100).optional().or(z.literal('')),
-  guardianPhone: z.string().max(20).optional().or(z.literal('')),
+  name: z.string().trim().min(1).max(100),
+  email: z.string().email().or(z.literal('')).nullish(),
+  gender: z.string().max(40).nullish(),
+  dateOfBirth: z.string().max(30).refine((value) => value === '' || isValidPastDate(value), 'Use DD/MM/YYYY for a valid past date.').nullish(),
+  bloodGroup: z.enum(BLOOD_GROUPS).or(z.literal('')).nullish(),
+  address: z.string().max(250).nullish(),
+  city: z.string().max(100).nullish(),
+  guardianName: z.string().max(100).nullish(),
+  guardianPhone: z.string().max(20).refine((value) => value === '' || PHONE_PATTERN.test(value), 'Enter a valid phone number.').nullish(),
 });
 
 const updateUserProfileSchema = upsertUserSchema.omit({ phone: true }).partial().extend({
-  name: z.string().min(1).optional(),
+  name: z.string().trim().min(1).max(100).optional(),
 });
 
 const createRouteSchema = z.object({

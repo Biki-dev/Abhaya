@@ -97,6 +97,23 @@ class ApiHttpError extends Error {
   }
 }
 
+function getReadableApiError(raw: string, status: number) {
+  try {
+    const payload = JSON.parse(raw) as { error?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] } | string };
+    if (typeof payload.error === 'string') return payload.error;
+    if (payload.error?.fieldErrors) {
+      const messages = Object.entries(payload.error.fieldErrors).flatMap(([field, fieldMessages]) =>
+        fieldMessages.map((message) => `${field}: ${message}`)
+      );
+      if (messages.length) return messages.join('\n');
+    }
+    if (payload.error?.formErrors?.length) return payload.error.formErrors.join('\n');
+  } catch {
+    // Fall through for non-JSON server responses.
+  }
+  return raw || `Request failed (${status})`;
+}
+
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const baseUrls = getApiBaseUrlCandidates();
   let lastError: unknown = null;
@@ -112,8 +129,8 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       });
 
       if (!response.ok) {
-        const message = await response.text();
-        throw new ApiHttpError(response.status, message || `Request failed: ${response.status}`);
+        const raw = await response.text();
+        throw new ApiHttpError(response.status, getReadableApiError(raw, response.status));
       }
 
       return response.json() as Promise<T>;
