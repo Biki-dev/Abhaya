@@ -69,9 +69,11 @@ export default function RootNavigator() {
   const signOut = async () => {
     try {
       const { logoutUser, clearLocalUserData } = await import('../services/api');
+      const { logoutRevenueCat } = await import('../services/revenueCat');
       if (authState.userToken) {
         await logoutUser(authState.userToken).catch(err => console.warn('Backend logout failed', err));
       }
+      await logoutRevenueCat();
       await clearLocalUserData();
       setAuthState({ isLoading: false, userToken: null });
     } catch (error) {

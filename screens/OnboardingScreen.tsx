@@ -37,6 +37,7 @@ export default function OnboardingScreen({ navigation, onComplete }: any) {
   };
 
   const handleAddContact = () => {
+    if (contacts.length >= 3) return;
     setContacts([...contacts, { name: '', phone: '' }]);
   };
 
@@ -251,10 +252,13 @@ export default function OnboardingScreen({ navigation, onComplete }: any) {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.addContactButton} onPress={handleAddContact}>
-              <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
-              <Text style={styles.addContactText}>Add another contact</Text>
-            </TouchableOpacity>
+            {contacts.length < 3 && (
+              <TouchableOpacity style={styles.addContactButton} onPress={handleAddContact}>
+                <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
+                <Text style={styles.addContactText}>Add another contact</Text>
+              </TouchableOpacity>
+            )}
+            {contacts.length >= 3 && <Text style={styles.skipNote}>Free plan supports up to 3 emergency contacts. You can upgrade later from Settings.</Text>}
 
             <TouchableOpacity style={[styles.button, styles.buttonActive]} onPress={handleFinish}>
               <Text style={styles.buttonText}>Get Started</Text>

@@ -13,6 +13,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocation } from '../context/LocationContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useSOSContextFull } from '../context/SOSContext';
 import { colors, spacing, typography, borderRadius, sizes } from '../theme';
 import {
@@ -63,6 +64,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
   const [estimatedTime, setEstimatedTime]     = useState('30');
   const [destLocation, setDestLocation]       = useState<Loc | null>(null);
   const { userLocation, locationGranted }     = useLocation();
+  const { isPremiumActive }                   = useSubscription();
   const [routeHistory, setRouteHistory]       = useState<RouteHistoryRecord[]>([]);
   const [activeCheckIn, setActiveCheckIn]     = useState<{
     destination: string; estimatedTime: number; startTime: number; routeId?: number;
@@ -136,9 +138,11 @@ export default function RouteCheckInScreen({ navigation }: any) {
       const phone = await getStoredUserPhone();
       if (!phone) { setRouteHistory([]); return; }
       const h = await getUserRouteHistory(phone);
-      setRouteHistory(h.slice(0, 6));
+      setRouteHistory(h.slice(0, isPremiumActive ? 20 : 3));
     } catch {}
   };
+
+  useEffect(() => { void loadHistory(); }, [isPremiumActive]);
 
   const resolveAndShowDest = async (name: string, coords?: Loc) => {
     if (!userLocation) return;
@@ -398,7 +402,7 @@ export default function RouteCheckInScreen({ navigation }: any) {
 
             {routeHistory.length > 0 && (
               <>
-                <Text style={st.subTitle}>Recent Check-Ins</Text>
+                <Text style={st.subTitle}>Recent Check-Ins {isPremiumActive ? '(full history)' : '(Free plan: last 3)'}</Text>
                 {routeHistory.map(item => (
                   <View key={item.id} style={st.histCard}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

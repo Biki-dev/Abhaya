@@ -155,6 +155,28 @@ The app points to `https://abhaya-backend.onrender.com` by default (configured i
 | Fonts | @expo-google-fonts/manrope |
 | Build | EAS Build |
 
+## RevenueCat Test Store subscriptions
+
+Abhaya includes a RevenueCat subscription flow configured for **Test Store only**. The Free plan always includes SOS, emergency calling, basic safety tracking, profile, and route check-in. Abhaya Plus unlocks unlimited emergency contacts and extended route history. Abhaya Family includes Plus features and the Family Guardian Dashboard.
+
+| Plan | Entitlement | Test products |
+|---|---|---|
+| Abhaya Plus | `abhaya_plus` | `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test` |
+| Abhaya Family | `abhaya_family` | `abhaya_family_monthly_test`, `abhaya_family_yearly_test` |
+
+Create these products in RevenueCat's **Test Store**, attach them to the matching entitlements, and place them in the `default` offering. Set the public Test Store SDK keys in a local `.env` file using `.env.example` as a template. No production keys or real store credentials belong in this repository.
+
+RevenueCat uses `CustomerInfo.entitlements.active` as the source of truth for each user's plan. The app identifies the customer with the authenticated Abhaya phone number, so different users receive only the features granted to their own purchase. RevenueCat native modules require an Expo development build; Expo Go cannot run this payment integration.
+
+```bash
+npx expo install react-native-purchases expo-dev-client
+eas build --profile development --platform android
+# or: eas build --profile development --platform ios
+npx expo start --dev-client
+```
+
+Before production launch, replace Test Store products with real App Store/Google Play products, use platform-specific production keys, and complete platform sandbox testing. See the [RevenueCat Expo guide](https://www.revenuecat.com/docs/getting-started/installation/expo) and [sandbox guide](https://www.revenuecat.com/docs/test-and-launch/sandbox).
+
 ---
 
 <div align="center">

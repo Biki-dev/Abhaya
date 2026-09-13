@@ -26,6 +26,7 @@ import {
   type EmergencyContact,
 } from '../services/emergencyContacts';
 import { useAuth } from '../navigation/RootNavigator';
+import { useSubscription } from '../context/SubscriptionContext';
 
 type ContactEditState = {
   localId: string | null;   // null = new contact
@@ -35,6 +36,7 @@ type ContactEditState = {
 
 export default function SettingsScreen({ navigation }: any) {
   const { signOut } = useAuth();
+  const { isPremiumActive, isFamilyActive, plan } = useSubscription();
   // ── local contacts state ───────────────────────────────────────────────────
   const [contacts, setContactsState] = useState<EmergencyContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
@@ -75,6 +77,13 @@ export default function SettingsScreen({ navigation }: any) {
 
   // ── contact CRUD ───────────────────────────────────────────────────────────
   const openAddForm = () => {
+    if (!isPremiumActive && contacts.length >= 3) {
+      Alert.alert('Upgrade for unlimited contacts', 'The Free plan supports up to 3 emergency contacts. Upgrade to Abhaya Plus to add more.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'View plans', onPress: () => navigation.navigate('Subscription') },
+      ]);
+      return;
+    }
     setEditState({ localId: null, name: '', phone: '' });
     setEditErrors({});
     setEditMode(true);
@@ -179,7 +188,7 @@ export default function SettingsScreen({ navigation }: any) {
           <View>
             <Text style={styles.sectionTitle}>Emergency Contacts</Text>
             <Text style={styles.sectionSubtitle}>
-              SOS alerts are sent to all contacts below
+              SOS alerts are sent to all contacts below · {isPremiumActive ? 'Unlimited on your plan' : 'Free plan: 3 contacts'}
             </Text>
           </View>
           <View style={styles.sectionActions}>
@@ -333,6 +342,8 @@ export default function SettingsScreen({ navigation }: any) {
 
         {[
           { icon: 'person-circle-outline',      label: 'View Full Profile' },
+          { icon: 'card-outline',               label: plan === 'free' ? 'Upgrade Plan' : `Current Plan: ${plan === 'family' ? 'Family' : 'Plus'}` },
+          ...(isFamilyActive ? [{ icon: 'people-circle-outline', label: 'Family Guardian Dashboard' }] : []),
           { icon: 'shield-checkmark-outline',   label: 'Privacy & Security' },
           { icon: 'information-circle-outline', label: 'About Abhaya' },
           { icon: 'call-outline',               label: 'Contact Support' },
@@ -340,7 +351,13 @@ export default function SettingsScreen({ navigation }: any) {
           <TouchableOpacity
             key={label}
             style={styles.menuItem}
-            onPress={label === 'View Full Profile' ? () => navigation.navigate('Profile') : undefined}
+            onPress={label === 'View Full Profile'
+              ? () => navigation.navigate('Profile')
+              : label === 'Upgrade Plan' || label.startsWith('Current Plan')
+                ? () => navigation.navigate('Subscription')
+                : label === 'Family Guardian Dashboard'
+                  ? () => navigation.navigate('GuardianFamily')
+                  : undefined}
           >
             <View style={styles.menuIcon}>
               <Ionicons name={icon as any} size={20} color={colors.text} />

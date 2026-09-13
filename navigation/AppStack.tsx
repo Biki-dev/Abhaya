@@ -12,6 +12,8 @@ import SettingsScreen           from '../screens/SettingsScreen';
 import ProfileScreen            from '../screens/ProfileScreen';
 import SensorDashboardScreen    from '../screens/SensorDashboardScreen';
 import GuardianDashboardScreen  from '../screens/GuardianDashboardScreen';
+import SubscriptionScreen       from '../screens/SubscriptionScreen';
+import { SubscriptionProvider } from '../context/SubscriptionContext';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -39,13 +41,16 @@ function SettingsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="SettingsMain" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      <Stack.Screen name="GuardianFamily" component={GuardianDashboardScreen} />
     </Stack.Navigator>
   );
 }
 
 export default function AppStack() {
   return (
-    <Tab.Navigator
+    <SubscriptionProvider>
+      <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
@@ -55,17 +60,18 @@ export default function AppStack() {
         tabBarItemStyle:         styles.tabItem,
         tabBarShowLabel:         true,
       }}
-    >
-      <Tab.Screen name="Home" component={HomeStack}
-        options={{ tabBarLabel: 'Home', tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={22} color={color} /> }}
-      />
-      <Tab.Screen name="RouteCheckIn" component={RouteCheckInStack}
-        options={{ tabBarLabel: 'Check-In', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="map-marker-path" size={22} color={color} /> }}
-      />
-      <Tab.Screen name="Settings" component={SettingsStack}
-        options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={22} color={color} /> }}
-      />
-    </Tab.Navigator>
+      >
+        <Tab.Screen name="Home" component={HomeStack}
+          options={{ tabBarLabel: 'Home', tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={22} color={color} /> }}
+        />
+        <Tab.Screen name="RouteCheckIn" component={RouteCheckInStack}
+          options={{ tabBarLabel: 'Check-In', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="map-marker-path" size={22} color={color} /> }}
+        />
+        <Tab.Screen name="Settings" component={SettingsStack}
+          options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={22} color={color} /> }}
+        />
+      </Tab.Navigator>
+    </SubscriptionProvider>
   );
 }
 
