@@ -71,6 +71,9 @@
       "./assets/ei"
     ],
     "extra": {
+      "revenueCat": {
+        "testOnly": true
+      },
       "eas": {
         "projectId": "49b6337a-8640-4bff-bf92-72540df80bdf"
       },

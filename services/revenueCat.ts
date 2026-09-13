@@ -5,6 +5,7 @@ import Purchases, {
   type PurchasesOffering,
   type PurchasesPackage,
 } from 'react-native-purchases';
+import { calculateYearlySavings, getSubscriptionPlan, type SubscriptionPlan } from '../utils/subscriptionPlan';
 
 export const ENTITLEMENTS = {
   plus: 'abhaya_plus',
@@ -20,8 +21,7 @@ export const PRODUCT_IDS = {
 
 let configured = false;
 let configurationWarning = '';
-
-export type SubscriptionPlan = 'free' | 'plus' | 'family';
+let configurationPromise: Promise<boolean> | null = null;
 
 export type SubscriptionState = {
   customerInfo: CustomerInfo | null;
@@ -31,6 +31,11 @@ export type SubscriptionState = {
   isFamilyActive: boolean;
   isPremiumActive: boolean;
 };
+
+export function normalizeAppUserId(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  return digits ? `abhaya:${digits}` : '';
+}
 
 export function getRevenueCatApiKey() {
   return Platform.OS === 'ios'
@@ -45,28 +50,50 @@ export function getRevenueCatConfigurationWarning() {
 }
 
 export async function configureRevenueCat(appUserId: string) {
-  if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
-    configurationWarning = 'RevenueCat subscriptions are available in the iOS/Android development build.';
+  if (!appUserId) {
+    configurationWarning = 'A valid authenticated user identity is required for subscriptions. The account remains on the Free plan.';
     return false;
   }
-  const apiKey = getRevenueCatApiKey();
-  if (!apiKey) {
-    configurationWarning = 'Test Store API key is not configured. The account remains on the Free plan.';
-    return false;
-  }
-  try {
-    if (!configured && !(await Purchases.isConfigured())) {
-      Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
-      Purchases.configure({ apiKey });
-      configured = true;
+  if (configured) {
+    try {
+      await Purchases.logIn(appUserId);
+      configurationWarning = '';
+      return true;
+    } catch (error) {
+      configurationWarning = error instanceof Error ? error.message : 'RevenueCat is unavailable in this build.';
+      return false;
     }
-    await Purchases.logIn(appUserId);
-    configurationWarning = '';
-    return true;
-  } catch (error) {
-    configurationWarning = error instanceof Error ? error.message : 'RevenueCat is unavailable in this build.';
-    return false;
   }
+  if (configurationPromise) return configurationPromise;
+
+  configurationPromise = (async () => {
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+      configurationWarning = 'RevenueCat subscriptions are available in the iOS/Android development build.';
+      return false;
+    }
+    const apiKey = getRevenueCatApiKey();
+    if (!apiKey) {
+      configurationWarning = 'Test Store API key is not configured. The account remains on the Free plan.';
+      return false;
+    }
+    try {
+      Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
+      if (!(await Purchases.isConfigured())) {
+        Purchases.configure({ apiKey });
+      }
+      configured = true;
+      await Purchases.logIn(appUserId);
+      configurationWarning = '';
+      return true;
+    } catch (error) {
+      configurationWarning = error instanceof Error ? error.message : 'RevenueCat is unavailable in this build.';
+      return false;
+    } finally {
+      configurationPromise = null;
+    }
+  })();
+
+  return configurationPromise;
 }
 
 export function getSubscriptionState(customerInfo: CustomerInfo | null): SubscriptionState {
@@ -76,7 +103,7 @@ export function getSubscriptionState(customerInfo: CustomerInfo | null): Subscri
   return {
     customerInfo,
     offerings: null,
-    plan: isFamilyActive ? 'family' : isPlusActive ? 'plus' : 'free',
+    plan: getSubscriptionPlan({ isPlusActive, isFamilyActive }),
     isPlusActive,
     isFamilyActive,
     isPremiumActive: isFamilyActive || isPlusActive,
@@ -96,8 +123,7 @@ export async function getCurrentOffering() {
 
 export async function purchaseSubscription(packageToPurchase: PurchasesPackage) {
   if (!configured) throw new Error('RevenueCat Test Store is not configured for this development build.');
-  const result = await Purchases.purchasePackage(packageToPurchase);
-  return result.customerInfo;
+  return (await Purchases.purchasePackage(packageToPurchase)).customerInfo;
 }
 
 export async function restoreSubscriptions() {
@@ -115,10 +141,14 @@ export async function logoutRevenueCat() {
   try {
     await Purchases.logOut();
   } catch {
-    // Logout must not prevent the Abhaya account from logging out.
+    // Account logout must not be blocked by an offline RevenueCat call.
   }
 }
 
-export function isPurchaseCancelled(error: any) {
-  return Boolean(error?.userCancelled) || error?.code === '1' || error?.code === 1;
+export function isPurchaseCancelled(error: unknown) {
+  const candidate = error as { userCancelled?: boolean; code?: string | number } | null;
+  return Boolean(candidate?.userCancelled) || candidate?.code === '1' || candidate?.code === 1;
 }
+
+export { calculateYearlySavings };
+export type { SubscriptionPlan } from '../utils/subscriptionPlan';

@@ -168,12 +168,24 @@ Create these products in RevenueCat's **Test Store**, attach them to the matchin
 
 RevenueCat uses `CustomerInfo.entitlements.active` as the source of truth for each user's plan. The app identifies the customer with the authenticated Abhaya phone number, so different users receive only the features granted to their own purchase. RevenueCat native modules require an Expo development build; Expo Go cannot run this payment integration.
 
+#### Exact Test Store setup
+
+1. In RevenueCat, create or open the project's **Test Store** and copy its public iOS and Android Test Store SDK keys into a local `.env` file. Never use secret RevenueCat API keys in the app.
+2. Create the four Test Store products with these exact identifiers: `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test`, `abhaya_family_monthly_test`, and `abhaya_family_yearly_test`. Give each product clearly marked test pricing; the suggested future INR prices in the product brief are not app charges.
+3. Create entitlements `abhaya_plus` and `abhaya_family`. Attach the two Plus products to `abhaya_plus` and the two Family products to `abhaya_family`.
+4. Create or edit the `default` offering. Add Plus monthly as `$rc_monthly`, Plus yearly as `$rc_annual`, and add the Family monthly and yearly products as custom packages (use the closest valid monthly/yearly package type if the dashboard does not allow a custom identifier). The product identifiers above must remain exact.
+5. Build the app with the development profile and test purchases in the Test Store modal. Missing keys, missing offerings, network failures, and cancelled purchases leave the account on its last known plan and never disable SOS or emergency behavior.
+
+The current implementation deliberately does not add a backend premium flag or an unverified webhook. Before production, add a RevenueCat webhook endpoint with signature verification, persist server-side entitlement state keyed to the stable Abhaya user ID, and enforce server-side access for any backend-only premium operation. Replace Test Store products and keys only in a separate release configuration after Apple/Google sandbox testing.
+
 ```bash
 npx expo install react-native-purchases expo-dev-client
 eas build --profile development --platform android
 # or: eas build --profile development --platform ios
 npx expo start --dev-client
 ```
+
+Run local checks with `npm run typecheck` and `npm test`. RevenueCat Test Store purchases require the native development build; Expo Go can preview the screen only and must not be treated as payment validation.
 
 Before production launch, replace Test Store products with real App Store/Google Play products, use platform-specific production keys, and complete platform sandbox testing. See the [RevenueCat Expo guide](https://www.revenuecat.com/docs/getting-started/installation/expo) and [sandbox guide](https://www.revenuecat.com/docs/test-and-launch/sandbox).
 

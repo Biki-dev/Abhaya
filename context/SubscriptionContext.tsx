@@ -12,6 +12,7 @@ import {
   type SubscriptionPlan,
   openManageSubscriptions,
 } from '../services/revenueCat';
+import { getSubscriptionErrorMessage } from '../utils/subscriptionPlan';
 
 type SubscriptionContextValue = {
   customerInfo: CustomerInfo | null;
@@ -38,10 +39,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
+    setWarning('');
     try {
       const phone = await getStoredUserPhone();
-      if (!phone) return;
-      const enabled = await configureRevenueCat(`abhaya:${phone.replace(/\D/g, '')}`);
+      if (!phone) {
+        setCustomerInfo(null);
+        setOffering(null);
+        return;
+      }
+      const enabled = await configureRevenueCat(phone.replace(/\D/g, '') ? `abhaya:${phone.replace(/\D/g, '')}` : '');
       setWarning(getRevenueCatConfigurationWarning());
       if (!enabled) return;
       const [info, currentOffering] = await Promise.all([
@@ -50,8 +56,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       ]);
       setCustomerInfo(info);
       setOffering(currentOffering);
+      if (!currentOffering) setWarning('No active Test Store offering is configured yet. The account remains on the Free plan.');
     } catch (error) {
-      setWarning(error instanceof Error ? error.message : 'Could not refresh subscription status.');
+      setWarning(getSubscriptionErrorMessage(error, 'load'));
     } finally {
       setIsLoading(false);
     }
