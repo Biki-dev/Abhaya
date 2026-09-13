@@ -85,7 +85,7 @@ export default function SensorDashboardScreen({ navigation }: any) {
 
   // load userId
   useEffect(() => {
-    AsyncStorage.getItem('saathiUserData').then(raw => {
+    AsyncStorage.getItem('AbhayaUserData').then(raw => {
       if (raw) setUserId((JSON.parse(raw) as any).phone ?? '');
     });
     refreshLog();
@@ -220,7 +220,7 @@ export default function SensorDashboardScreen({ navigation }: any) {
         </View>
         {mesh.peers.length > 0 ? (
           <>
-            <Text style={[s.meta, { marginTop: spacing.md, marginBottom: spacing.sm }]}>Nearby Saathi users:</Text>
+            <Text style={[s.meta, { marginTop: spacing.md, marginBottom: spacing.sm }]}>Nearby Abhaya users:</Text>
             {mesh.peers.map(peer => (
               <View key={peer.id} style={s.peerRow}>
                 <Ionicons name="bluetooth" size={14} color={colors.primary} />

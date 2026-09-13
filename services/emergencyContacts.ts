@@ -26,7 +26,7 @@ export type EmergencyContact = {
 };
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
-const CONTACTS_KEY = 'saathi_emergency_contacts';   // local list
+const CONTACTS_KEY = 'Abhaya_emergency_contacts';   // local list
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function uuid(): string {
@@ -48,7 +48,7 @@ async function writeLocal(contacts: EmergencyContact[]): Promise<void> {
 
 async function getUserPhone(): Promise<string | null> {
   try {
-    const raw = await AsyncStorage.getItem('saathiUserData');
+    const raw = await AsyncStorage.getItem('AbhayaUserData');
     if (!raw) return null;
     return (JSON.parse(raw) as { phone?: string }).phone ?? null;
   } catch {
@@ -69,7 +69,7 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
 
 async function getWorkingBase(): Promise<string | null> {
   // Always try the cached working URL first (set by heartbeat / apiRequest)
-  const stored = await AsyncStorage.getItem('saathi_api_base').catch(() => null);
+  const stored = await AsyncStorage.getItem('Abhaya_api_base').catch(() => null);
   const candidates = [...new Set(
     [stored, ...getApiBaseUrlCandidates()].filter((v): v is string => Boolean(v))
   )];
@@ -79,7 +79,7 @@ async function getWorkingBase(): Promise<string | null> {
       const res = await fetchWithTimeout(`${base}/health`, 3000);
       if (res.ok) {
         // Cache so next call is instant
-        await AsyncStorage.setItem('saathi_api_base', base).catch(() => {});
+        await AsyncStorage.setItem('Abhaya_api_base', base).catch(() => {});
         return base;
       }
     } catch {

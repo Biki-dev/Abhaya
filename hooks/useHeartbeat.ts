@@ -34,7 +34,7 @@ export function useHeartbeat(
         ? [workingBaseRef.current, ...getApiBaseUrlCandidates().filter(u => u !== workingBaseRef.current)]
         : getApiBaseUrlCandidates();
 
-      const storedBase = await AsyncStorage.getItem('saathi_api_base').catch(() => null);
+      const storedBase = await AsyncStorage.getItem('Abhaya_api_base').catch(() => null);
       const allUrls = [...new Set([storedBase, ...candidates].filter((v): v is string => Boolean(v)))];
 
       let ok = false;
@@ -51,7 +51,7 @@ export function useHeartbeat(
             failCountRef.current = 0;
             workingBaseRef.current = base;
             if (storedBase !== base) {
-              AsyncStorage.setItem('saathi_api_base', base).catch(() => {});
+              AsyncStorage.setItem('Abhaya_api_base', base).catch(() => {});
             }
             break;
           }

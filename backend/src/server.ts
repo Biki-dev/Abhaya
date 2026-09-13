@@ -4,6 +4,12 @@ import { z } from 'zod';
 import { prisma } from './db.js';
 import { sensorRouter } from './sensorRoutes.js';
 import { contactsRouter } from './contactsRoutes.js';
+import { crimeRouter } from './crimeRoutes.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const upsertUserSchema = z.object({
   phone: z.string().min(10),
@@ -27,16 +33,33 @@ const completeRouteSchema = z.object({
   completedAt: z.string().datetime().optional(),
 });
 
+import { createServer } from 'http';
+import { setupSocket } from './socket.js';
+import { safetyRouter } from './safetyRoutes.js';
+import { meshRouter } from './meshRoutes.js';
+import { sosRouter } from './sosRoutes.js';
+
 export function startServer() {
   const app = express();
+  const httpServer = createServer(app);
   const port = Number(process.env.PORT ?? 4000);
+
+  setupSocket(httpServer);
 
   app.use(cors());
   app.use(express.json());
+  
+  // Serve web-viewer static files
+  const webViewerPath = join(__dirname, '../../web-viewer');
+  app.use('/view', express.static(webViewerPath));
 
   // ── Routers ──────────────────────────────────────────────────────────────
   app.use(sensorRouter);
   app.use(contactsRouter);
+  app.use(crimeRouter);
+  app.use(safetyRouter);
+  app.use(meshRouter);
+  app.use(sosRouter);
 
   // ── Health ────────────────────────────────────────────────────────────────
   app.get('/health', async (_req, res) => {
@@ -164,7 +187,25 @@ export function startServer() {
     }
   });
 
-  app.listen(port, '0.0.0.0', () => {
+  httpServer.listen(port, '0.0.0.0', () => {
     console.log(`Backend running on http://0.0.0.0:${port}`);
   });
+
+// Global error handlers — prevent crashes in production
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Server] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Server] Uncaught Exception:', error);
+  // Don't exit — Render will restart if needed
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('[Server] SIGTERM received, closing connections...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
 }

@@ -36,6 +36,7 @@ export const GlobalMicState = { level: 0, isListening: false };
 // ─────────────────────────────────────────────────────────────────────────────
 const KEYWORD_DETECTION_ENABLED = true;
 const CONFIDENCE_THRESHOLD      = 0.60;   
+const SCREAM_CONFIDENCE_THRESHOLD = 0.90;
 const AUDIO_SAMPLE_RATE         = 16000;  
 const CHUNK_DURATION_MS         = 1000;   
 const DEBOUNCE_MS               = 4000;
@@ -46,6 +47,7 @@ const WINDOW_SAMPLES            = Math.floor(AUDIO_SAMPLE_RATE * (CHUNK_DURATION
 const EI_BASE_URL = Platform.OS === 'android'
   ? 'file:///android_asset/ei'    
   : 'http://localhost:8082';       
+
 
 // ── Types ──
 export type EIWebViewHandle = {
@@ -318,7 +320,10 @@ export function useEdgeImpulseKeywordDetection(
     const maxConf = Math.max(...allResults.map(r => r.value));
     GlobalMicState.level = maxConf;
 
-    const isKeyword = isKeywordLabel(label) && confidence >= CONFIDENCE_THRESHOLD * 0.8;
+    const threshold = isScreamLabel(label)
+      ? SCREAM_CONFIDENCE_THRESHOLD
+      : CONFIDENCE_THRESHOLD;
+    const isKeyword = isKeywordLabel(label) && confidence >= threshold * 0.8;
     const score = isKeyword ? confidence : 0;
 
     confidenceWindowRef.current.push(score);
@@ -334,10 +339,10 @@ export function useEdgeImpulseKeywordDetection(
       lastConfidence: windowAvg,
       lastLabel:      label,
       audioLevel:     maxConf,
-      status:         windowAvg >= CONFIDENCE_THRESHOLD ? 'detected' : 'listening',
+      status:         windowAvg >= threshold ? 'detected' : 'listening',
     }));
 
-    if (windowAvg >= CONFIDENCE_THRESHOLD) {
+    if (windowAvg >= threshold) {
       const now = Date.now();
       if (now - lastDetectionRef.current > DEBOUNCE_MS) {
         lastDetectionRef.current = now;
@@ -419,6 +424,7 @@ export function useEdgeImpulseKeywordDetection(
 
 function isKeywordLabel(label: string): boolean {
   const lower = label.toLowerCase();
+  if (lower.includes('scream'))  return true;
   if (lower.includes('help'))    return true;
   if (lower.includes('sos'))     return true;
   if (lower.includes('bachao'))   return true;
@@ -428,4 +434,8 @@ function isKeywordLabel(label: string): boolean {
   if (negatives.includes(lower)) return false;
 
   return true; 
+}
+
+function isScreamLabel(label: string): boolean {
+  return label.toLowerCase().includes('scream');
 }

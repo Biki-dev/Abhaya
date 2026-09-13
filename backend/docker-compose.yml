@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:16
-    container_name: rakshita_postgres
+    container_name: Abhaya_postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: rakshita
+      POSTGRES_DB: Abhaya
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:

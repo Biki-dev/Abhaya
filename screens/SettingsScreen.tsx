@@ -146,7 +146,7 @@ export default function SettingsScreen({ navigation }: any) {
   const handleLogout = () => {
     Alert.alert(
       'Log Out',
-      'Are you sure you want to log out of Saathi?',
+      'Are you sure you want to log out of Abhaya?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -173,32 +173,6 @@ export default function SettingsScreen({ navigation }: any) {
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.placeholder} />
       </View>
-
-      {/* ── Safety Toggles ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Safety Settings</Text>
-
-        {[
-          { key: 'audioRecording',  label: 'Audio Recording',     desc: 'Auto-record during SOS' },
-          { key: 'gpsTracking',     label: 'GPS Tracking',         desc: 'Share location with guardians' },
-          { key: 'emergencyAlerts', label: 'Emergency Alerts',     desc: 'Push notifications enabled' },
-          { key: 'wakeWord',        label: 'Wake Word Detection',  desc: 'Say "Saathi" to trigger SOS' },
-        ].map(({ key, label, desc }) => (
-          <View key={key} style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>{label}</Text>
-              <Text style={styles.settingDescription}>{desc}</Text>
-            </View>
-            <Switch
-              value={settings[key as keyof typeof settings]}
-              onValueChange={(v) => setSettings({ ...settings, [key]: v })}
-              trackColor={{ false: colors.inactive, true: colors.safe }}
-              thumbColor={settings[key as keyof typeof settings] ? colors.text : colors.muted}
-            />
-          </View>
-        ))}
-      </View>
-
       {/* ── Emergency Contacts ── */}
       <View style={styles.section}>
         <View style={styles.sectionHeaderRow}>
@@ -353,23 +327,6 @@ export default function SettingsScreen({ navigation }: any) {
         )}
       </View>
 
-      {/* ── Safe Zones (placeholder) ── */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Safe Zones</Text>
-          <TouchableOpacity>
-            <Text style={styles.addButtonText}>+ Add Zone</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.emptyState}>
-          <MaterialCommunityIcons name="map-marker-radius-outline" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateText}>No safe zones added</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Draw zones on the map where SOS won't trigger
-          </Text>
-        </View>
-      </View>
-
       {/* ── Account ── */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
@@ -377,7 +334,7 @@ export default function SettingsScreen({ navigation }: any) {
         {[
           { icon: 'person-circle-outline',      label: 'View Full Profile' },
           { icon: 'shield-checkmark-outline',   label: 'Privacy & Security' },
-          { icon: 'information-circle-outline', label: 'About Saathi' },
+          { icon: 'information-circle-outline', label: 'About Abhaya' },
           { icon: 'call-outline',               label: 'Contact Support' },
         ].map(({ icon, label }) => (
           <TouchableOpacity key={label} style={styles.menuItem}>
@@ -392,18 +349,15 @@ export default function SettingsScreen({ navigation }: any) {
 
       {/* ── Danger Zone ── */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, styles.dangerTitle]}>Danger Zone</Text>
+        
         <TouchableOpacity style={styles.dangerButton} onPress={handleLogout}>
           <Text style={styles.dangerButtonText}>Log Out</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.dangerButtonDestructive}>
-          <Text style={styles.dangerButtonDestructiveText}>Delete Account</Text>
         </TouchableOpacity>
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.versionText}>Saathi v1.0.0</Text>
+        <Text style={styles.versionText}>Abhaya v1.0.0</Text>
         <Text style={styles.copyrightText}>Made for your safety</Text>
       </View>
     </ScrollView>

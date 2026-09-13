@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from './db.js';
-
+import rateLimit from 'express-rate-limit';
 export const sensorRouter = Router();
 
 // ── /api/audio-risk/analyze ───────────────────────────────────────────────────
@@ -21,7 +21,7 @@ const audioRiskSchema = z.object({
   transcript: z.string().optional(),
   features:   z.array(z.number()).optional(),
 });
-
+const audioRateLimit = rateLimit({ windowMs: 60_000, max: 120 });
 const DISTRESS_KEYWORDS = ['help help', 'help me', 'bachao', 'help', 'please help', 'sos'];
 const DISTRESS_THRESHOLD = 0.60;
 
@@ -57,7 +57,7 @@ function scoreTranscript(transcript: string): number {
   return 0;
 }
 
-sensorRouter.post('/api/audio-risk/analyze', (req, res) => {
+sensorRouter.post('/api/audio-risk/analyze', audioRateLimit , (req, res) => {
   const parsed = audioRiskSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });

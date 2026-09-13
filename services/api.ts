@@ -22,15 +22,18 @@ function getExpoHostBaseUrl() {
 }
 
 export function getApiBaseUrlCandidates() {
+  const PRODUCTION_URL = 'https://abhaya-backend.onrender.com';
+  
   const expoHostBaseUrl = getExpoHostBaseUrl();
 
   const platformDefaults =
     Platform.OS === 'android'
-      ? ['http://10.168.73.47:4000', 'http://localhost:4000']
+      ? ['http://10.0.2.2:4000', 'http://localhost:4000']
       : ['http://localhost:4000'];
 
   const candidates = [
     EXPO_PUBLIC_API_BASE_URL,
+    PRODUCTION_URL,
     EXPO_PUBLIC_LAN_API_BASE_URL,
     expoHostBaseUrl,
     ...platformDefaults,
@@ -144,7 +147,7 @@ export async function getUserRouteHistory(userPhone: string) {
 }
 
 export async function getStoredUserPhone() {
-  const dataString = await AsyncStorage.getItem('saathiUserData');
+  const dataString = await AsyncStorage.getItem('AbhayaUserData');
   if (!dataString) {
     return null;
   }
@@ -154,7 +157,7 @@ export async function getStoredUserPhone() {
 }
 
 export async function getStoredUserData() {
-  const dataString = await AsyncStorage.getItem('saathiUserData');
+  const dataString = await AsyncStorage.getItem('AbhayaUserData');
   if (!dataString) {
     return null;
   }
@@ -179,7 +182,7 @@ export async function getStoredUserData() {
  */
 export async function setManualBackendIp(ip: string) {
   const baseUrl = ip.startsWith('http') ? ip : `http://${ip}:4000`;
-  await AsyncStorage.setItem('saathi_api_base', baseUrl);
+  await AsyncStorage.setItem('Abhaya_api_base', baseUrl);
   console.log('[API] Manual backend IP set to:', baseUrl);
 }
 
@@ -206,6 +209,6 @@ export async function logoutUser(phone: string) {
 }
 
 export async function clearLocalUserData() {
-  await AsyncStorage.removeItem('saathiUserData');
-  await AsyncStorage.removeItem('saathi_emergency_contacts');
+  await AsyncStorage.removeItem('AbhayaUserData');
+  await AsyncStorage.removeItem('Abhaya_emergency_contacts');
 }

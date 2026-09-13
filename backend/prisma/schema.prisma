@@ -19,6 +19,20 @@ model User {
   heartbeat        Heartbeat?
   emergencyContacts EmergencyContact[]
   sessions         Session[]
+  safetySessions   SafetySession[]
+}
+
+model SafetySession {
+  id        String   @id @default(cuid())
+  userId    Int
+  status    String   @default("ACTIVE") // ACTIVE, COMPLETED
+  lastLat   Float?
+  lastLng   Float?
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Session {
@@ -90,6 +104,20 @@ model Heartbeat {
   updatedAt DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CrimeZoneCache {
+  key       String   @id
+  lat       Float
+  lng       Float
+  radius    Int
+  severity  String?
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
 }
 
 enum RouteStatus {

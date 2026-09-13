@@ -64,7 +64,7 @@ export default function OnboardingScreen({ navigation, onComplete }: any) {
       onboardingComplete: true,
     };
 
-    await AsyncStorage.setItem('saathiUserData', JSON.stringify(userData));
+    await AsyncStorage.setItem('AbhayaUserData', JSON.stringify(userData));
 
     // 1. Upsert user in backend (MANDATORY for first-time sync)
     try {
@@ -111,7 +111,7 @@ export default function OnboardingScreen({ navigation, onComplete }: any) {
         <View style={styles.header}>
           <View style={styles.logoBadge}>
             <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
-            <Text style={styles.logo}>Saathi</Text>
+            <Text style={styles.logo}>Abhaya</Text>
           </View>
           <Text style={styles.tagline}>Personal safety, designed to feel calm and reliable</Text>
           <View style={styles.stepDots}>

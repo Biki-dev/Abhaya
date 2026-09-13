@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Saathi",
+    "name": "Abhaya",
     "slug": "saathi",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,58 +15,67 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "locationAlwaysAndWhenInUsePermissionAlert": "Saathi needs access to your location for safety features.",
-        "locationWhenInUsePermissionAlert": "Saathi needs access to your location while using the app.",
+        "locationAlwaysAndWhenInUsePermissionAlert": "Abhaya needs access to your location for safety features.",
+        "locationWhenInUsePermissionAlert": "Abhaya needs access to your location while using the app.",
         "microphone": {
-          "microphonePermissionAlert": "Saathi needs microphone access to record emergency audio."
+          "microphonePermissionAlert": "Abhaya needs microphone access to record emergency audio."
         }
       },
-      "bundleIdentifier": "com.trialssd.saathi"
+      "bundleIdentifier": "com.trialssd.Abhaya"
     },
     "android": {
+      "newArchEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
+      "package": "com.trialssd.Abhaya",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "RECORD_AUDIO",
         "INTERNET",
         "ACCESS_NETWORK_STATE",
+        "POST_NOTIFICATIONS",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE_MICROPHONE",
-        "android.permission.POST_NOTIFICATIONS"
-      ],
-      "package": "com.trialssd.saathi",
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
-        }
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+        "android.permission.BLUETOOTH_ADVERTISE",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN"
+      ]
     },
     "plugins": [
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermissionAlert": "Saathi needs access to your location for safety features.",
-          "locationWhenInUsePermissionAlert": "Saathi needs access to your location while using the app."
+          "locationAlwaysAndWhenInUsePermissionAlert": "Abhaya needs access to your location for safety features.",
+          "locationWhenInUsePermissionAlert": "Abhaya needs access to your location while using the app.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": []
+          }
+        }
+      ]
+    ],
+    "assets": [
+      "./assets/ei"
     ],
     "extra": {
       "eas": {
         "projectId": "49b6337a-8640-4bff-bf92-72540df80bdf"
-      }
-    }
+      },
+      "apiBaseUrl": "https://abhaya-backend.onrender.com"
+    },
+    "owner": "bikide"
   }
 }

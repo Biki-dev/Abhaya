@@ -1,5 +1,5 @@
 {
-  "name": "rakshita",
+  "name": "Abhaya",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -19,14 +19,19 @@
     "buffer": "^6.0.3",
     "expo": "~54.0.33",
     "expo-av": "~16.0.8",
+    "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
+    "expo-device": "~8.0.10",
     "expo-file-system": "~18.0.10",
     "expo-location": "~18.0.8",
+    "expo-notifications": "~0.32.17",
     "expo-sensors": "~14.0.2",
     "expo-status-bar": "~2.0.1",
+    "expo-task-manager": "~14.0.9",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-audio-record": "^0.2.2",
+    "react-native-ble-manager": "^12.4.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "1.20.1",
     "react-native-reanimated": "~4.1.1",
@@ -34,7 +39,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "react-native-webview": "13.15.0",
-    "twilio": "^6.0.0"
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@react-native-community/cli": "latest",
