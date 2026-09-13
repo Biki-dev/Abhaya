@@ -15,6 +15,17 @@ const upsertUserSchema = z.object({
   phone: z.string().min(10),
   name: z.string().min(1),
   email: z.string().email().optional().or(z.literal('')),
+  gender: z.string().max(40).optional().or(z.literal('')),
+  dateOfBirth: z.string().max(30).optional().or(z.literal('')),
+  bloodGroup: z.string().max(10).optional().or(z.literal('')),
+  address: z.string().max(250).optional().or(z.literal('')),
+  city: z.string().max(100).optional().or(z.literal('')),
+  guardianName: z.string().max(100).optional().or(z.literal('')),
+  guardianPhone: z.string().max(20).optional().or(z.literal('')),
+});
+
+const updateUserProfileSchema = upsertUserSchema.omit({ phone: true }).partial().extend({
+  name: z.string().min(1).optional(),
 });
 
 const createRouteSchema = z.object({
@@ -74,11 +85,21 @@ export function startServer() {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
-    const { phone, name, email } = parsed.data;
+    const { phone, name, email, gender, dateOfBirth, bloodGroup, address, city, guardianName, guardianPhone } = parsed.data;
     const user = await prisma.user.upsert({
       where: { phone },
-      update: { name, email: email || null },
-      create: { phone, name, email: email || null },
+      update: {
+        name,
+        email: email || null,
+        ...(gender !== undefined ? { gender: gender || null } : {}),
+        ...(dateOfBirth !== undefined ? { dateOfBirth: dateOfBirth || null } : {}),
+        ...(bloodGroup !== undefined ? { bloodGroup: bloodGroup || null } : {}),
+        ...(address !== undefined ? { address: address || null } : {}),
+        ...(city !== undefined ? { city: city || null } : {}),
+        ...(guardianName !== undefined ? { guardianName: guardianName || null } : {}),
+        ...(guardianPhone !== undefined ? { guardianPhone: guardianPhone || null } : {}),
+      },
+      create: { phone, name, email: email || null, gender: gender || null, dateOfBirth: dateOfBirth || null, bloodGroup: bloodGroup || null, address: address || null, city: city || null, guardianName: guardianName || null, guardianPhone: guardianPhone || null },
     });
 
     return res.json(user);
@@ -93,6 +114,29 @@ export function startServer() {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    return res.json(user);
+  });
+
+  app.patch('/api/users/:phone', async (req, res) => {
+    const parsed = updateUserProfileSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const existing = await prisma.user.findUnique({ where: { phone: req.params.phone } });
+    if (!existing) return res.status(404).json({ error: 'User not found' });
+    const data = parsed.data;
+    const user = await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.email !== undefined ? { email: data.email || null } : {}),
+        ...(data.gender !== undefined ? { gender: data.gender || null } : {}),
+        ...(data.dateOfBirth !== undefined ? { dateOfBirth: data.dateOfBirth || null } : {}),
+        ...(data.bloodGroup !== undefined ? { bloodGroup: data.bloodGroup || null } : {}),
+        ...(data.address !== undefined ? { address: data.address || null } : {}),
+        ...(data.city !== undefined ? { city: data.city || null } : {}),
+        ...(data.guardianName !== undefined ? { guardianName: data.guardianName || null } : {}),
+        ...(data.guardianPhone !== undefined ? { guardianPhone: data.guardianPhone || null } : {}),
+      },
+    });
     return res.json(user);
   });
 

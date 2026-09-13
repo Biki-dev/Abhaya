@@ -337,7 +337,11 @@ export default function SettingsScreen({ navigation }: any) {
           { icon: 'information-circle-outline', label: 'About Abhaya' },
           { icon: 'call-outline',               label: 'Contact Support' },
         ].map(({ icon, label }) => (
-          <TouchableOpacity key={label} style={styles.menuItem}>
+          <TouchableOpacity
+            key={label}
+            style={styles.menuItem}
+            onPress={label === 'View Full Profile' ? () => navigation.navigate('Profile') : undefined}
+          >
             <View style={styles.menuIcon}>
               <Ionicons name={icon as any} size={20} color={colors.text} />
             </View>

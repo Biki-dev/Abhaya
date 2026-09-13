@@ -8,29 +8,36 @@ datasource db {
 }
 
 model User {
-  id               Int                @id @default(autoincrement())
-  phone            String             @unique
-  name             String
-  email            String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  routes           RouteHistory[]
-  sensorEvents     SensorEvent[]
-  heartbeat        Heartbeat?
+  id                Int                @id @default(autoincrement())
+  phone             String             @unique
+  name              String
+  email             String?
+  gender            String?
+  dateOfBirth       String?
+  bloodGroup        String?
+  address           String?
+  city              String?
+  guardianName      String?
+  guardianPhone     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  routes            RouteHistory[]
+  sensorEvents      SensorEvent[]
+  heartbeat         Heartbeat?
   emergencyContacts EmergencyContact[]
-  sessions         Session[]
-  safetySessions   SafetySession[]
+  sessions          Session[]
+  safetySessions    SafetySession[]
 }
 
 model SafetySession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    Int
-  status    String   @default("ACTIVE") // ACTIVE, COMPLETED
+  status    String    @default("ACTIVE") // ACTIVE, COMPLETED
   lastLat   Float?
   lastLng   Float?
-  startedAt DateTime @default(now())
+  startedAt DateTime  @default(now())
   endedAt   DateTime?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

@@ -50,6 +50,23 @@ type UserPayload = {
   email?: string;
 };
 
+export type UserProfile = {
+  phone: string;
+  name: string;
+  email: string;
+  gender: string;
+  dateOfBirth: string;
+  bloodGroup: string;
+  address: string;
+  city: string;
+  guardianName: string;
+  guardianPhone: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type UserProfileUpdate = Omit<UserProfile, 'createdAt' | 'updatedAt'>;
+
 type CreateRoutePayload = {
   userPhone: string;
   destinationName: string;
@@ -123,6 +140,22 @@ export async function upsertUser(payload: UserPayload) {
   });
 }
 
+export async function getUserProfile(phone: string) {
+  return apiRequest<UserProfile>(`/api/users/${encodeURIComponent(phone)}`, { method: 'GET' });
+}
+
+export async function updateUserProfile(payload: UserProfileUpdate) {
+  const local = await getStoredUserProfile();
+  const next = { ...local, ...payload };
+  await AsyncStorage.setItem('AbhayaUserData', JSON.stringify(next));
+  const saved = await apiRequest<UserProfile>(`/api/users/${encodeURIComponent(payload.phone)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  await AsyncStorage.setItem('AbhayaUserData', JSON.stringify({ ...next, ...saved }));
+  return saved;
+}
+
 export async function createRouteHistory(payload: CreateRoutePayload) {
   return apiRequest<{ id: number }>('/api/routes', {
     method: 'POST',
@@ -173,6 +206,12 @@ export async function getStoredUserData() {
     name: data.name ?? '',
     email: data.email ?? '',
   };
+}
+
+export async function getStoredUserProfile(): Promise<Partial<UserProfile> | null> {
+  const dataString = await AsyncStorage.getItem('AbhayaUserData');
+  if (!dataString) return null;
+  return JSON.parse(dataString) as Partial<UserProfile>;
 }
 
 /**

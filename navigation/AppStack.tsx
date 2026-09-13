@@ -9,6 +9,7 @@ import { colors } from '../theme';
 import HomeMapScreen            from '../screens/HomeMapScreen';
 import RouteCheckInScreen       from '../screens/RouteCheckInScreen';
 import SettingsScreen           from '../screens/SettingsScreen';
+import ProfileScreen            from '../screens/ProfileScreen';
 import SensorDashboardScreen    from '../screens/SensorDashboardScreen';
 import GuardianDashboardScreen  from '../screens/GuardianDashboardScreen';
 
@@ -37,6 +38,7 @@ function SettingsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="SettingsMain" component={SettingsScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }
