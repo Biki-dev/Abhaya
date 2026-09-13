@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { PurchasesPackage } from 'react-native-purchases';
@@ -6,6 +6,7 @@ import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { calculateYearlySavings, isPurchaseCancelled, PRODUCT_IDS } from '../services/revenueCat';
 import { getSubscriptionErrorMessage } from '../utils/subscriptionPlan';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 const PLUS_IDS: Set<string> = new Set([PRODUCT_IDS.plusMonthly, PRODUCT_IDS.plusYearly]);
 const FAMILY_IDS: Set<string> = new Set([PRODUCT_IDS.familyMonthly, PRODUCT_IDS.familyYearly]);
@@ -15,7 +16,9 @@ export default function SubscriptionScreen({ navigation }: any) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useFocusEffect(useCallback(() => {
+    void refresh();
+  }, [refresh]));
   const packages = useMemo(() => offering?.availablePackages ?? [], [offering]);
   const plusPackages = packages.filter((item) => PLUS_IDS.has(item.product.identifier));
   const familyPackages = packages.filter((item) => FAMILY_IDS.has(item.product.identifier));

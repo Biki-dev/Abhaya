@@ -27,6 +27,27 @@ model User {
   emergencyContacts EmergencyContact[]
   sessions          Session[]
   safetySessions    SafetySession[]
+  subscriptionSnapshots SubscriptionSnapshot[]
+}
+
+/// Audit snapshots received from the RevenueCat client. These records are for
+/// purchase history/support only; the app never uses them as entitlement authority.
+model SubscriptionSnapshot {
+  id                    String   @id @default(cuid())
+  userId                Int
+  revenueCatAppUserId   String
+  store                 String
+  plan                  String
+  activeEntitlements    Json     @default("[]")
+  purchasedProductIds   Json     @default("[]")
+  requestDate           DateTime?
+  originalPurchaseDate  DateTime?
+  syncedAt              DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, syncedAt])
+  @@index([revenueCatAppUserId])
 }
 
 model SafetySession {

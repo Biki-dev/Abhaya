@@ -39,6 +39,17 @@ const updateUserProfileSchema = upsertUserSchema.omit({ phone: true }).partial()
   name: z.string().trim().min(1).max(100).optional(),
 });
 
+const subscriptionSnapshotSchema = z.object({
+  phone: z.string().min(7).max(30),
+  revenueCatAppUserId: z.string().min(1).max(200),
+  store: z.literal('test_store'),
+  plan: z.enum(['free', 'plus', 'family']),
+  activeEntitlements: z.array(z.string().max(100)).max(10),
+  purchasedProductIds: z.array(z.string().max(200)).max(100),
+  requestDate: z.string().datetime().nullable().optional(),
+  originalPurchaseDate: z.string().datetime().nullable().optional(),
+});
+
 const createRouteSchema = z.object({
   userPhone: z.string().min(10),
   destinationName: z.string().min(1),
@@ -149,6 +160,32 @@ export function startServer() {
       },
     });
     return res.json(user);
+  });
+
+  // Purchase history/support audit only. Paid access is never granted from this
+  // client-submitted snapshot; RevenueCat CustomerInfo remains the app authority.
+  app.post('/api/subscriptions/snapshot', async (req, res) => {
+    const parsed = subscriptionSnapshotSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const payload = parsed.data;
+    const user = await prisma.user.findUnique({ where: { phone: payload.phone } });
+    if (!user) return res.status(404).json({ error: 'User not found for subscription snapshot' });
+
+    const snapshot = await prisma.subscriptionSnapshot.create({
+      data: {
+        userId: user.id,
+        revenueCatAppUserId: payload.revenueCatAppUserId,
+        store: payload.store,
+        plan: payload.plan,
+        activeEntitlements: payload.activeEntitlements,
+        purchasedProductIds: payload.purchasedProductIds,
+        requestDate: payload.requestDate ? new Date(payload.requestDate) : null,
+        originalPurchaseDate: payload.originalPurchaseDate ? new Date(payload.originalPurchaseDate) : null,
+      },
+    });
+
+    return res.status(201).json({ id: snapshot.id, syncedAt: snapshot.syncedAt });
   });
 
   // ── Routes ────────────────────────────────────────────────────────────────

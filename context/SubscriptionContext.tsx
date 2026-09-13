@@ -1,12 +1,14 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { CustomerInfo, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
-import { getStoredUserPhone } from '../services/api';
+import { getStoredUserPhone, saveSubscriptionSnapshot } from '../services/api';
 import {
   configureRevenueCat,
   getCurrentOffering,
   getCurrentSubscriptionInfo,
   getRevenueCatConfigurationWarning,
   getSubscriptionState,
+  getSubscriptionSnapshot,
+  normalizeAppUserId,
   purchaseSubscription,
   restoreSubscriptions,
   type SubscriptionPlan,
@@ -37,6 +39,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true);
   const [warning, setWarning] = useState('');
 
+  const persistSnapshot = useCallback(async (info: CustomerInfo, phone: string) => {
+    try {
+      await saveSubscriptionSnapshot(getSubscriptionSnapshot(info, phone));
+    } catch {
+      // Purchase history sync is best-effort and must never block safety or access.
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setWarning('');
@@ -47,7 +57,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         setOffering(null);
         return;
       }
-      const enabled = await configureRevenueCat(phone.replace(/\D/g, '') ? `abhaya:${phone.replace(/\D/g, '')}` : '');
+      const enabled = await configureRevenueCat(normalizeAppUserId(phone));
       setWarning(getRevenueCatConfigurationWarning());
       if (!enabled) return;
       const [info, currentOffering] = await Promise.all([
@@ -56,25 +66,30 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       ]);
       setCustomerInfo(info);
       setOffering(currentOffering);
+      if (info) void persistSnapshot(info, phone);
       if (!currentOffering) setWarning('No active Test Store offering is configured yet. The account remains on the Free plan.');
     } catch (error) {
       setWarning(getSubscriptionErrorMessage(error, 'load'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [persistSnapshot]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
   const purchase = useCallback(async (packageToPurchase: PurchasesPackage) => {
     const info = await purchaseSubscription(packageToPurchase);
     setCustomerInfo(info);
-  }, []);
+    const phone = await getStoredUserPhone();
+    if (phone) void persistSnapshot(info, phone);
+  }, [persistSnapshot]);
 
   const restore = useCallback(async () => {
     const info = await restoreSubscriptions();
     setCustomerInfo(info);
-  }, []);
+    const phone = await getStoredUserPhone();
+    if (phone) void persistSnapshot(info, phone);
+  }, [persistSnapshot]);
 
   const manageSubscriptions = useCallback(async () => {
     await openManageSubscriptions();

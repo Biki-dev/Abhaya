@@ -14,6 +14,7 @@ import { useBLEMesh }                           from '../hooks/useBLEMesh';
 import { logSensorEvent, getLocalEvents, SensorEvent } from '../services/sensorDb';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSubscription } from '../context/SubscriptionContext';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
@@ -75,6 +76,7 @@ const card = StyleSheet.create({
 
 // ─── main screen ──────────────────────────────────────────────────────────────
 export default function SensorDashboardScreen({ navigation }: any) {
+  const { isPremiumActive } = useSubscription();
   const [sensorActive, setSensorActive] = useState(true);
   const [meshActive,   setMeshActive]   = useState(false);
   const [userId,       setUserId]       = useState('');
@@ -128,6 +130,24 @@ export default function SensorDashboardScreen({ navigation }: any) {
   const normAccel = (v: number) => clamp01((v + 4) / 8);
   const normGyro  = (v: number) => clamp01((v + 10) / 20);
   const { accelerometer: acc, gyroscope: gyr, gps, mic, motion } = sensors;
+
+  if (!isPremiumActive) {
+    return (
+      <View style={[s.container, s.lockedContainer]}>
+        <Ionicons name="lock-closed-outline" size={46} color={colors.primary} />
+        <Text style={s.lockedTitle}>Enhanced sensor insights</Text>
+        <Text style={s.lockedText}>
+          Live fall, motion, audio, and sensor history dashboards are available on Abhaya Plus and Family. Core SOS protection remains free.
+        </Text>
+        <TouchableOpacity style={s.upgradeButton} onPress={() => navigation.navigate('Subscription')}>
+          <Text style={s.upgradeButtonText}>View plans</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.backLockedButton} onPress={() => navigation.goBack()}>
+          <Text style={s.backLockedText}>Back to safety dashboard</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={s.container} showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
@@ -283,6 +303,13 @@ function eventColor(type: string): string {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  lockedContainer: { justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+  lockedTitle: { ...typography.heading, color: colors.text, marginTop: spacing.lg, textAlign: 'center' },
+  lockedText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm, lineHeight: 22 },
+  upgradeButton: { backgroundColor: colors.primary, borderRadius: borderRadius.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, marginTop: spacing.xl },
+  upgradeButtonText: { ...typography.body, color: '#fff', fontFamily: 'Manrope_700Bold' },
+  backLockedButton: { padding: spacing.md, marginTop: spacing.sm },
+  backLockedText: { ...typography.bodySmall, color: colors.primary },
   content:   { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.lg, marginBottom: spacing.md },
   backBtn:   { flexDirection: 'row', alignItems: 'center' },

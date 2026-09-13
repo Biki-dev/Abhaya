@@ -24,6 +24,7 @@ function HomeStack() {
       <Stack.Screen name="HomeMap"          component={HomeMapScreen} />
       <Stack.Screen name="SensorDashboard"  component={SensorDashboardScreen} />
       <Stack.Screen name="Guardian"         component={GuardianDashboardScreen} />
+      <Stack.Screen name="Subscription"    component={SubscriptionScreen} />
     </Stack.Navigator>
   );
 }

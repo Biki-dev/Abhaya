@@ -196,6 +196,28 @@ export async function getUserRouteHistory(userPhone: string) {
   });
 }
 
+export type SubscriptionSnapshotPayload = {
+  phone: string;
+  revenueCatAppUserId: string;
+  store: 'test_store';
+  plan: 'free' | 'plus' | 'family';
+  activeEntitlements: string[];
+  purchasedProductIds: string[];
+  requestDate?: string | null;
+  originalPurchaseDate?: string | null;
+};
+
+/**
+ * Stores purchase history for support/account history only. Never use this
+ * response to decide whether a premium feature is available.
+ */
+export async function saveSubscriptionSnapshot(payload: SubscriptionSnapshotPayload) {
+  return apiRequest<{ id: string; syncedAt: string }>('/api/subscriptions/snapshot', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getStoredUserPhone() {
   const dataString = await AsyncStorage.getItem('AbhayaUserData');
   if (!dataString) {

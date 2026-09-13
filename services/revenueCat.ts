@@ -110,6 +110,26 @@ export function getSubscriptionState(customerInfo: CustomerInfo | null): Subscri
   };
 }
 
+export function getSubscriptionSnapshot(customerInfo: CustomerInfo, phone: string) {
+  const raw = customerInfo as unknown as {
+    originalAppUserId?: string;
+    requestDate?: string;
+    originalPurchaseDate?: string | null;
+    allPurchasedProductIdentifiers?: string[];
+  };
+  const state = getSubscriptionState(customerInfo);
+  return {
+    phone,
+    revenueCatAppUserId: raw.originalAppUserId || normalizeAppUserId(phone),
+    store: 'test_store' as const,
+    plan: state.plan,
+    activeEntitlements: Object.keys(customerInfo.entitlements.active ?? {}),
+    purchasedProductIds: raw.allPurchasedProductIdentifiers ?? [],
+    requestDate: raw.requestDate ?? null,
+    originalPurchaseDate: raw.originalPurchaseDate ?? null,
+  };
+}
+
 export async function getCurrentSubscriptionInfo() {
   if (!configured) return null;
   return Purchases.getCustomerInfo();
