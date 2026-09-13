@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/copy-ei-assets.js
 // ─────────────────────────────────────────────────────────────────────────────
-// Copies edge-impulse-standalone.js and edge-impulse-standalone.wasm
+// Copies edge-impulse-standalone-all.js and edge-impulse-standalone-all.wasm
 // into the correct native asset folders for Android and iOS.
 //
 // Run once after adding/updating the model:
@@ -22,10 +22,8 @@ const ANDROID_ASSETS = path.join(__dirname, '..', 'android', 'app', 'src', 'main
 const IOS_ASSETS     = path.join(__dirname, '..', 'ios', 'Rakshita', 'ei');  // adjust "Rakshita" to your iOS target name
 
 const FILES = [
-  'edge-impulse-standalone.js',
-  'edge-impulse-standalone.wasm',
-  'edge-impulse-help.js',
-  'edge-impulse-help.wasm',
+  'edge-impulse-standalone-all.js',
+  'edge-impulse-standalone-all.wasm',
   'run-impulse.js'
 ];
 
@@ -55,7 +53,7 @@ if (fs.existsSync(path.join(__dirname, '..', 'android'))) {
   for (const f of FILES) {
     copyFile(path.join(EI_SOURCE_DIR, f), path.join(ANDROID_ASSETS, f));
   }
-  console.log('\nAndroid: load via file:///android_asset/ei/edge-impulse-standalone.js');
+  console.log('\nAndroid: load via file:///android_asset/ei/edge-impulse-standalone-all.js');
 } else {
   console.log('ℹ️   No android/ folder found, skipping Android copy.');
 }
@@ -67,7 +65,7 @@ if (fs.existsSync(path.join(__dirname, '..', 'ios'))) {
     copyFile(path.join(EI_SOURCE_DIR, f), path.join(IOS_ASSETS, f));
   }
   console.log('\niOS: remember to add ei/ folder to your Xcode project as a folder reference.');
-  console.log('     Then use: Bundle.main.url(forResource: "edge-impulse-standalone", withExtension: "js")');
+  console.log('     Then use: Bundle.main.url(forResource: "edge-impulse-standalone-all", withExtension: "js")');
 } else {
   console.log('ℹ️   No ios/ folder found, skipping iOS copy.');
 }
