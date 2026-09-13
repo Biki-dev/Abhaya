@@ -189,6 +189,18 @@ npx expo start --dev-client
 
 Run local checks with `npm run typecheck` and `npm test`; run `cd backend && npm run build` for the backend. RevenueCat Test Store purchases require the native development build; Expo Go can preview the screen only and must not be treated as payment validation.
 
+### Edge Impulse Android asset bundling
+
+The keyword classifier runs inside a WebView and requires `run-impulse.js`, `edge-impulse-standalone-all.js`, and `edge-impulse-standalone-all.wasm` under `file:///android_asset/ei`. The Expo config plugin `plugins/withEdgeImpulseAssets.js` copies these files automatically during `expo prebuild`, `expo run:android`, and EAS builds. After updating this fix, rebuild the native app; restarting Metro alone cannot change the already-installed APK:
+
+```bash
+npx expo prebuild --clean --platform android
+npx expo run:android
+# or: eas build --profile development --platform android
+```
+
+If the warning persists in an existing development build, uninstall the old APK first and install the newly rebuilt one.
+
 Before production launch, replace Test Store products with real App Store/Google Play products, use platform-specific production keys, and complete platform sandbox testing. See the [RevenueCat Expo guide](https://www.revenuecat.com/docs/getting-started/installation/expo) and [sandbox guide](https://www.revenuecat.com/docs/test-and-launch/sandbox).
 
 ---

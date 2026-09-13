@@ -58,6 +58,7 @@
         }
       ],
       "expo-asset",
+      "./plugins/withEdgeImpulseAssets",
       [
         "expo-build-properties",
         {

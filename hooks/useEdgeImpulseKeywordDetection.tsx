@@ -117,12 +117,8 @@ async function initClassifier() {
     await loadScript('${baseUrl}/run-impulse.js');
     classifier = new EdgeImpulseClassifier();
     
-    var initPromise = classifier.init();
-    loadScript('${baseUrl}/' + '${modelFile}').catch(function(e) {
-      rnPost({ type: 'error', msg: '[EI] Failed to load JS: ' + e });
-    });
-
-    await initPromise;
+    await loadScript('${baseUrl}/' + '${modelFile}');
+    await classifier.init();
 
     var project = classifier.getProjectInfo();
     classifierReady = true;
