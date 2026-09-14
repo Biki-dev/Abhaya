@@ -17,8 +17,6 @@ model User {
   bloodGroup        String?
   address           String?
   city              String?
-  guardianName      String?
-  guardianPhone     String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   routes            RouteHistory[]

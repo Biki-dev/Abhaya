@@ -40,7 +40,6 @@ The name comes from the Sanskrit Word **abhaya** (अभया) — the meaning 
 | One-tap SOS | Big red button on the home screen. Starts a 10-second countdown — slide to cancel. After that, alerts go out. |
 | Voice keyword detection | Microphone runs in background via `expo-task-manager`. Detected keyword → SOS flow begins. |
 | Live location | `expo-location` in always-on mode. Coordinates stream to the backend over Socket.IO in real time. |
-| BLE device support | Pair a Bluetooth button/wearable via `react-native-ble-manager`. Press it → same SOS flow. |
 | Push notifications | Emergency contacts receive a push (`expo-notifications`) with your location and a live-tracking link. |
 | Map view | In-app map (`react-native-maps`) shows your current location and any contacts tracking you. |
 | Emergency audio | `react-native-audio-record` captures ambient audio on SOS trigger — stored for context. |
@@ -132,7 +131,6 @@ The app points to `https://abhaya-backend.onrender.com` by default (configured i
 | Fine / Coarse Location | Real-time GPS for SOS alerts |
 | Background Location | Keeps tracking active when screen is off |
 | Record Audio | Keyword detection + emergency audio capture |
-| Bluetooth (Scan / Connect / Advertise) | Pairing with wearable BLE trigger device |
 | Post Notifications | SOS alerts to emergency contacts |
 
 ---
@@ -148,7 +146,6 @@ The app points to `https://abhaya-backend.onrender.com` by default (configured i
 | HTTP | Axios 1.6 |
 | Location | expo-location + expo-task-manager |
 | Audio | expo-av + react-native-audio-record |
-| Bluetooth | react-native-ble-manager 12 |
 | Maps | react-native-maps |
 | Notifications | expo-notifications |
 | Storage | @react-native-async-storage/async-storage |
@@ -157,7 +154,7 @@ The app points to `https://abhaya-backend.onrender.com` by default (configured i
 
 ## RevenueCat Test Store subscriptions
 
-Abhaya includes a RevenueCat subscription flow configured for **Test Store only**. The Free plan always includes SOS, emergency calling, basic safety tracking, profile, and route check-in. Abhaya Plus unlocks unlimited emergency contacts and extended route history. Abhaya Family includes Plus features and the Family Guardian Dashboard.
+Abhaya includes a RevenueCat subscription flow configured for **Test Store only**. The Free plan always includes SOS, emergency calling, basic safety tracking, profile, and route check-in. Abhaya Plus unlocks unlimited emergency contacts, extended route history, and enhanced safety history. Abhaya Family includes the Plus safety features.
 
 | Plan | Entitlement | Test products |
 |---|---|---|

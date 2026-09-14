@@ -59,8 +59,6 @@ export type UserProfile = {
   bloodGroup: string;
   address: string;
   city: string;
-  guardianName: string;
-  guardianPhone: string;
   createdAt: string;
   updatedAt: string;
 };

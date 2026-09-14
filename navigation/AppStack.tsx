@@ -11,7 +11,6 @@ import RouteCheckInScreen       from '../screens/RouteCheckInScreen';
 import SettingsScreen           from '../screens/SettingsScreen';
 import ProfileScreen            from '../screens/ProfileScreen';
 import SensorDashboardScreen    from '../screens/SensorDashboardScreen';
-import GuardianDashboardScreen  from '../screens/GuardianDashboardScreen';
 import SubscriptionScreen       from '../screens/SubscriptionScreen';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 
@@ -23,7 +22,6 @@ function HomeStack() {
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="HomeMap"          component={HomeMapScreen} />
       <Stack.Screen name="SensorDashboard"  component={SensorDashboardScreen} />
-      <Stack.Screen name="Guardian"         component={GuardianDashboardScreen} />
       <Stack.Screen name="Subscription"    component={SubscriptionScreen} />
     </Stack.Navigator>
   );
@@ -43,7 +41,6 @@ function SettingsStack() {
       <Stack.Screen name="SettingsMain" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-      <Stack.Screen name="GuardianFamily" component={GuardianDashboardScreen} />
     </Stack.Navigator>
   );
 }

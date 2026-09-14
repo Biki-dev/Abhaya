@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSensorFusion, SensorData }         from '../hooks/useSensorFusion';
-import { useBLEMesh }                           from '../hooks/useBLEMesh';
 import { logSensorEvent, getLocalEvents, SensorEvent } from '../services/sensorDb';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -78,12 +77,10 @@ const card = StyleSheet.create({
 export default function SensorDashboardScreen({ navigation }: any) {
   const { isPremiumActive } = useSubscription();
   const [sensorActive, setSensorActive] = useState(true);
-  const [meshActive,   setMeshActive]   = useState(false);
   const [userId,       setUserId]       = useState('');
   const [eventLog,     setEventLog]     = useState<SensorEvent[]>([]);
 
   const sensors = useSensorFusion(sensorActive);
-  const { state: mesh, sendSOSViaMesh } = useBLEMesh(meshActive);
 
   // load userId
   useEffect(() => {
@@ -221,46 +218,6 @@ export default function SensorDashboardScreen({ navigation }: any) {
           </>
         ) : (
           <Text style={s.meta}>Waiting for GPS fix…</Text>
-        )}
-      </Card>
-
-      {/* BLE Mesh */}
-      <Card title="BLE Mesh Network" accent={mesh.isActive ? colors.primary : undefined}>
-        <View style={s.rowBetween}>
-          <TouchableOpacity onPress={() => setMeshActive(a => !a)} style={[s.meshBtn, { backgroundColor: meshActive ? colors.primary : colors.border }]}>
-            <Text style={s.meshBtnText}>{meshActive ? 'Mesh Active' : 'Enable Mesh'}</Text>
-          </TouchableOpacity>
-          <View style={s.meshStats}>
-            <Text style={s.meta}>Sent: {mesh.packetsSent}</Text>
-            <Text style={s.meta}>Relayed: {mesh.packetsRelayed}</Text>
-            <Text style={[s.meta, { color: mesh.networkReachable ? colors.safe : colors.danger }]}>
-              {mesh.networkReachable ? '4G Online' : 'No Network — Mesh Mode'}
-            </Text>
-          </View>
-        </View>
-        {mesh.peers.length > 0 ? (
-          <>
-            <Text style={[s.meta, { marginTop: spacing.md, marginBottom: spacing.sm }]}>Nearby Abhaya users:</Text>
-            {mesh.peers.map(peer => (
-              <View key={peer.id} style={s.peerRow}>
-                <Ionicons name="bluetooth" size={14} color={colors.primary} />
-                <Text style={s.peerName}>{peer.name}</Text>
-                <Text style={s.peerRssi}>{peer.rssi} dBm</Text>
-                {peer.isRelaying && <Text style={s.peerRelay}>RELAYING</Text>}
-              </View>
-            ))}
-          </>
-        ) : (
-          <Text style={[s.meta, { marginTop: spacing.sm }]}>No peers nearby</Text>
-        )}
-        {!mesh.networkReachable && gps && (
-          <TouchableOpacity
-            style={s.meshSosBtn}
-            onPress={() => sendSOSViaMesh(gps.latitude, gps.longitude, userId)}
-          >
-            <MaterialCommunityIcons name="alarm-light" size={16} color="#fff" />
-            <Text style={s.meshSosBtnText}>Broadcast SOS via Mesh</Text>
-          </TouchableOpacity>
         )}
       </Card>
 

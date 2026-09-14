@@ -13,7 +13,6 @@ const __dirname = dirname(__filename);
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 const DATE_OF_BIRTH_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-const PHONE_PATTERN = /^\+?[0-9\s()-]{7,20}$/;
 
 function isValidPastDate(value: string) {
   const match = DATE_OF_BIRTH_PATTERN.exec(value);
@@ -31,8 +30,6 @@ const upsertUserSchema = z.object({
   bloodGroup: z.enum(BLOOD_GROUPS).or(z.literal('')).nullish(),
   address: z.string().max(250).nullish(),
   city: z.string().max(100).nullish(),
-  guardianName: z.string().max(100).nullish(),
-  guardianPhone: z.string().max(20).refine((value) => value === '' || PHONE_PATTERN.test(value), 'Enter a valid phone number.').nullish(),
 });
 
 const updateUserProfileSchema = upsertUserSchema.omit({ phone: true }).partial().extend({
@@ -69,7 +66,6 @@ const completeRouteSchema = z.object({
 import { createServer } from 'http';
 import { setupSocket } from './socket.js';
 import { safetyRouter } from './safetyRoutes.js';
-import { meshRouter } from './meshRoutes.js';
 import { sosRouter } from './sosRoutes.js';
 
 export function startServer() {
@@ -91,7 +87,6 @@ export function startServer() {
   app.use(contactsRouter);
   app.use(crimeRouter);
   app.use(safetyRouter);
-  app.use(meshRouter);
   app.use(sosRouter);
 
   // ── Health ────────────────────────────────────────────────────────────────
@@ -107,7 +102,7 @@ export function startServer() {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
-    const { phone, name, email, gender, dateOfBirth, bloodGroup, address, city, guardianName, guardianPhone } = parsed.data;
+    const { phone, name, email, gender, dateOfBirth, bloodGroup, address, city } = parsed.data;
     const user = await prisma.user.upsert({
       where: { phone },
       update: {
@@ -118,10 +113,8 @@ export function startServer() {
         ...(bloodGroup !== undefined ? { bloodGroup: bloodGroup || null } : {}),
         ...(address !== undefined ? { address: address || null } : {}),
         ...(city !== undefined ? { city: city || null } : {}),
-        ...(guardianName !== undefined ? { guardianName: guardianName || null } : {}),
-        ...(guardianPhone !== undefined ? { guardianPhone: guardianPhone || null } : {}),
       },
-      create: { phone, name, email: email || null, gender: gender || null, dateOfBirth: dateOfBirth || null, bloodGroup: bloodGroup || null, address: address || null, city: city || null, guardianName: guardianName || null, guardianPhone: guardianPhone || null },
+      create: { phone, name, email: email || null, gender: gender || null, dateOfBirth: dateOfBirth || null, bloodGroup: bloodGroup || null, address: address || null, city: city || null },
     });
 
     return res.json(user);
@@ -155,8 +148,6 @@ export function startServer() {
         ...(data.bloodGroup !== undefined ? { bloodGroup: data.bloodGroup || null } : {}),
         ...(data.address !== undefined ? { address: data.address || null } : {}),
         ...(data.city !== undefined ? { city: data.city || null } : {}),
-        ...(data.guardianName !== undefined ? { guardianName: data.guardianName || null } : {}),
-        ...(data.guardianPhone !== undefined ? { guardianPhone: data.guardianPhone || null } : {}),
       },
     });
     return res.json(user);

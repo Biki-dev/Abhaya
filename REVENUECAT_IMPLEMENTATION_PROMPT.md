@@ -17,8 +17,8 @@ Use this three-tier plan model for the first implementation:
 | Plan | Test product identifiers | Suggested production positioning | Features |
 |---|---|---|---|
 | **Free** | No purchase required | Free | SOS, emergency contacts up to 3, core safety tracking, basic profile, basic route check-in |
-| **Abhaya Plus** | `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test` | ₹99/month or ₹799/year | Unlimited emergency contacts, full route history, enhanced sensor/fall alerts, extended safety history, guardian sharing |
-| **Abhaya Family** | `abhaya_family_monthly_test`, `abhaya_family_yearly_test` | ₹199/month or ₹1,499/year | Everything in Plus, support for up to 5 family members/guardians, family-wide safety status, priority alerts |
+| **Abhaya Plus** | `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test` | ₹99/month or ₹799/year | Unlimited emergency contacts, full route history, enhanced sensor/fall alerts, and extended safety history |
+| **Abhaya Family** | `abhaya_family_monthly_test`, `abhaya_family_yearly_test` | ₹199/month or ₹1,499/year | Everything in Plus with expanded safety history and priority alerts |
 
 The prices above are only suggested future production prices. For this task, create **RevenueCat Test Store products only** with clearly marked test pricing. Do not present the suggested production prices as real charges.
 

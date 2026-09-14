@@ -7,7 +7,7 @@
 
 ## Executive conclusion
 
-Abhaya is already broad enough to make a strong hackathon entry. Its current codebase includes one-tap SOS, countdown cancellation, location tracking, emergency contacts, route check-ins, guardian surfaces, sensor fusion, voice-keyword detection, BLE experiments, a web viewer, and RevenueCat Test Store subscriptions.
+Abhaya is already broad enough to make a strong hackathon entry. Its current codebase includes one-tap SOS, countdown cancellation, location tracking, emergency contacts, route check-ins, trusted contact surfaces, sensor fusion, voice-keyword detection, a web viewer, and RevenueCat Test Store subscriptions.
 
 The highest-probability winning strategy is **not** to add more disconnected features. It is to make one safety promise undeniable:
 
@@ -15,7 +15,7 @@ The highest-probability winning strategy is **not** to add more disconnected fea
 
 The primary demo should show this causal chain:
 
-`Free account → trusted contact → SOS countdown → cancel or confirm → location freshness → notification/request status → guardian live view → recovery`, followed by a RevenueCat Test Store purchase that unlocks one clearly useful enhancement.
+`Free account → trusted contact → SOS countdown → cancel or confirm → location freshness → notification/request status →  trusted contact live view → recovery`, followed by a RevenueCat Test Store purchase that unlocks one clearly useful enhancement.
 
 This strategy directly supports the published Next Gen criteria: a clear and useful idea, meaningful progress toward a working app, thoughtful RevenueCat use, and thoughtful technical, product, and presentation quality.[1]
 
@@ -30,7 +30,7 @@ The official Next Gen rules state that judges may rely solely on the submission 
 | Clear, useful, interesting, original idea | One sentence explaining the user, danger moment, and outcome | Strong product basis, but currently too many features compete for attention |
 | Meaningful progress toward a working app | A physical-device demo of one complete safety flow | Code is substantial; native-device and end-to-end delivery proof remain incomplete |
 | Thoughtful RevenueCat use | Free emergency value, paid enhancement, purchase, entitlement unlock, and restore | RevenueCat flow exists; Test Store configuration and physical-device proof remain to be demonstrated |
-| Technical and product quality | Calm emergency UX, honest status states, privacy decisions, clean setup, reliable failure handling | Several good foundations exist; guardian data and delivery states need hardening |
+| Technical and product quality | Calm emergency UX, honest status states, privacy decisions, clean setup, reliable failure handling | Several good foundations exist;  trusted contact data and delivery states need hardening |
 | Public repository | Source, assets, instructions, license, and reproducible build path | A root open-source `LICENSE` was not found and must be added immediately |
 | Submission video | Public English video under two minutes with device footage | Must be recorded on the exact tagged build submitted |
 
@@ -40,11 +40,11 @@ Use this positioning in the README, Devpost description, video opening, and pres
 
 > **Abhaya is a personal safety companion that turns a tap, voice trigger, or route-check-in failure into a cancellable, location-aware alert for a trusted person. Core protection stays free. Paid plans add capacity and coordination rather than putting emergency help behind a paywall.**
 
-Do not lead with “AI,” “BLE mesh,” “crime zones,” or “many sensors.” Those are implementation details. Lead with the outcome a frightened or distracted person needs.
+Do not lead with “AI,” “crime zones,” or “many sensors.” Those are implementation details. Lead with the outcome a frightened or distracted person needs.
 
 A strong short description is:
 
-> **Abhaya helps people get help without navigating a phone under stress. It combines a one-tap SOS, cancellable countdown, live location, route check-ins, and trusted-person alerts. RevenueCat powers ethical upgrades for richer history, enhanced sensing, and family coordination while core SOS remains free.**
+> **Abhaya helps people get help without navigating a phone under stress. It combines a one-tap SOS, cancellable countdown, live location, route check-ins, and trusted-person alerts. RevenueCat powers ethical upgrades for richer history, enhanced sensing, and expanded safety history while core SOS remains free.**
 
 ## 3. What to keep, improve, defer, or remove from the demo
 
@@ -57,7 +57,7 @@ A strong short description is:
 | Current location and freshness | Keep and make explicit | A location without timestamp or accuracy is not trustworthy |
 | Emergency contacts | Keep | It creates a concrete recipient for the safety outcome |
 | Route check-in | Keep as the second scenario | It demonstrates proactive protection, not only panic response |
-| Live-tracking web view or guardian view | Keep only if live and reliable | It makes the alert outcome visible to another person |
+| Live-tracking web view or  trusted contact view | Keep only if live and reliable | It makes the alert outcome visible to another person |
 | Free/Plus/Family boundary | Keep | It gives RevenueCat a meaningful product role |
 | Test Store purchase and restore | Keep | It proves RevenueCat is part of the product, not decorative code |
 
@@ -67,7 +67,6 @@ A strong short description is:
 |---|---|
 | Voice-keyword detection | Show only if it works reliably on the exact judging device. Otherwise describe it as an optional trigger in the repository. |
 | Fall and motion detection | Use as an optional Plus enhancement if the physical-device behavior is deterministic. Do not make it the only safety path. |
-| BLE button/wearable support | Label beta unless pairing, triggering, permissions, and fallback behavior are all reproducible. |
 | Sensor dashboard | Keep as a Plus/Family unlock, but show only one useful insight rather than a dense engineering console. |
 | Emergency audio | Keep out of the headline unless recording, privacy, storage, and playback are fully demonstrated. |
 | Crime-zone and police lookup | Keep as supporting infrastructure. Do not claim guaranteed police response or safety prediction. |
@@ -78,9 +77,9 @@ Do not delete working code merely to prepare the hackathon. Remove features from
 
 Exclude these from the primary video unless they are fully tested:
 
-- BLE mesh identity and proximity-routing claims.
+- experimental sensor-routing claims.
 - Police lookup or language implying guaranteed emergency-service dispatch.
-- Hard-coded guardian people, coordinates, or alert history.
+- Hard-coded  trusted contact people, coordinates, or alert history.
 - Dense sensor charts that do not lead to a clear user outcome.
 - Claims of production billing, App Store revenue, guaranteed delivery, or server-verified entitlement.
 - Any feature that requires a judge to configure multiple devices or accounts during the video.
@@ -114,21 +113,21 @@ The product should distinguish these states:
 | `Countdown` | The user can cancel before escalation |
 | `Queued` | The app accepted the alert locally but the network/provider has not confirmed delivery |
 | `Sent` | The configured provider accepted the message/request |
-| `Acknowledged` | The trusted person or guardian confirmed receipt |
+| `Acknowledged` | The trusted person or  trusted contact confirmed receipt |
 | `Offline` | The app could not reach the backend/provider and explains the next safe action |
 | `Completed` | The user ended the safety session safely |
 
 Never show “Alert delivered” merely because a local function returned successfully. This is one of the most important trust improvements for a safety product.
 
-### P0: Make the guardian view real or remove it from the core claim
+### P0: Make the  trusted contact view real or remove it from the core claim
 
-The current guardian screen contains hard-coded sample data such as a named person, fixed coordinates, and static alert history. That is a significant demo credibility risk.
+The current  trusted contact screen contains hard-coded sample data such as a named person, fixed coordinates, and static alert history. That is a significant demo credibility risk.
 
 Choose one path:
 
-- **Preferred:** implement a minimal live guardian view that reads the active safety session and displays the real demo user, latest timestamp, status, location, and acknowledgement action.
+- **Preferred:** implement a minimal live  trusted contact view that reads the active safety session and displays the real demo user, latest timestamp, status, location, and acknowledgement action.
 - **Fallback:** use the existing shareable web viewer and show a live session link with synthetic data clearly marked as a demo.
-- **Last resort:** remove Family Guardian from the main pitch and demonstrate Plus route history or sensor insights instead.
+- **Last resort:** remove Family Trusted Contact from the main pitch and demonstrate Plus route history or sensor insights instead.
 
 Do not present static data as live family protection.
 
@@ -157,7 +156,7 @@ The UI should show the Test Store badge and explicitly state that there is no re
 Use one primary paid upgrade for the video. The best choice is likely:
 
 - **Plus:** enhanced sensor insights or extended route history.
-- **Family:** only if the guardian view is genuinely live and useful.
+- **Family:** only if the  trusted contact view is genuinely live and useful.
 
 Do not demonstrate four paid features in the video. A judge should be able to answer “what did the purchase unlock?” within five seconds.
 
@@ -209,7 +208,7 @@ The official rules require a publicly visible video shorter than two minutes wit
 | 0:00–0:10 | Home screen, user and trusted contact configured | “Abhaya helps someone get help without navigating a phone under stress.” |
 | 0:10–0:25 | Tap SOS; show current location, timestamp, and countdown | “The alert is cancellable, so a false trigger does not immediately escalate.” |
 | 0:25–0:38 | Cancel once, then repeat and let it proceed | “Canceling stops escalation. Confirming continues to the trusted person.” |
-| 0:38–0:58 | Show queued/sent state and guardian/live web view | “The guardian sees the current location and alert state, not a static success message.” |
+| 0:38–0:58 | Show queued/sent state and  trusted contact/live web view | “The  trusted contact sees the current location and alert state, not a static success message.” |
 | 0:58–1:08 | End the safety session and show recovery | “The user can complete the session safely and close the alert.” |
 | 1:08–1:22 | Open Plans; show Free, Plus, Family, localized product metadata | “Core SOS remains Free. Paid plans add capacity and coordination.” |
 | 1:22–1:38 | Purchase one Test Store package | “RevenueCat activates the entitlement for this account.” |
@@ -223,11 +222,11 @@ Use synthetic names and locations. Do not show real phone numbers, real emergenc
 
 ### Day 1: Freeze the strategy and satisfy eligibility
 
-Add `LICENSE`, `DEMO.md`, and the submission-specific README section. Confirm the repository is public. Choose the primary paid unlock. Decide whether the guardian view is live enough to remain in the central demo.
+Add `LICENSE`, `DEMO.md`, and the submission-specific README section. Confirm the repository is public. Choose the primary paid unlock. Decide whether the  trusted contact view is live enough to remain in the central demo.
 
 ### Day 2: Stabilize the safety vertical slice
 
-Test onboarding, trusted-contact setup, permissions, SOS countdown, cancellation, location freshness, session completion, and the guardian/live view on the target physical device. Remove nonessential screens from the recording route.
+Test onboarding, trusted-contact setup, permissions, SOS countdown, cancellation, location freshness, session completion, and the  trusted contact/live view on the target physical device. Remove nonessential screens from the recording route.
 
 ### Day 3: Complete the RevenueCat Test Store fixture
 
@@ -271,7 +270,7 @@ The following is an internal planning model, not an official Ship-a-Ton score:
 | Area | Internal weight | Winning evidence |
 |---|---:|---|
 | Problem clarity and usefulness | 30% | One sentence, one user, one visible outcome |
-| Working progress and reliability | 30% | Physical-device SOS-to-guardian flow with honest failure states |
+| Working progress and reliability | 30% | Physical-device SOS-to- trusted contact flow with honest failure states |
 | RevenueCat product thinking | 20% | Free emergency protection, meaningful paid unlock, purchase, restore, entitlement change |
 | Technical, product, and presentation quality | 20% | Smooth UX, native build, privacy, accessible design, public repository, concise video |
 
@@ -282,7 +281,7 @@ The highest-impact work is therefore: **eligibility, one reliable vertical slice
 ### Eligibility and rules
 
 - Confirm active-student eligibility and qualifying academic email.
-- Confirm guardian consent if any entrant is below the local age of majority.
+- Confirm  trusted contact consent if any entrant is below the local age of majority.
 - Re-check the live Next Gen page and official rules immediately before submission.
 - Confirm the project is accessible from the United States.
 
@@ -335,7 +334,7 @@ The final entry should present three layers:
 
 1. **Free protection:** SOS, emergency calling, basic tracking, basic route check-in, and a trusted contact.
 2. **Plus coordination:** richer history and enhanced sensor insight.
-3. **Family coordination:** only if the guardian view is truly live; otherwise defer it from the main claim.
+3. **Expanded safety history:** only if the  trusted contact view is truly live; otherwise defer it from the main claim.
 
 The winning artifact is not the largest codebase. It is the most credible two-minute demonstration that a real person can use Abhaya under stress, that another person can understand the alert, and that RevenueCat supports a fair upgrade without paywalling emergency protection.
 

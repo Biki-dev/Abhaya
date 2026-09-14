@@ -22,14 +22,13 @@ import {
 
 const EMPTY_PROFILE: UserProfile = {
   phone: '', name: '', email: '', gender: '', dateOfBirth: '', bloodGroup: '',
-  address: '', city: '', guardianName: '', guardianPhone: '', createdAt: '', updatedAt: '',
+  address: '', city: '', createdAt: '', updatedAt: '',
 };
 
-type FieldKey = 'name' | 'email' | 'gender' | 'dateOfBirth' | 'bloodGroup' | 'address' | 'city' | 'guardianName' | 'guardianPhone';
+type FieldKey = 'name' | 'email' | 'gender' | 'dateOfBirth' | 'bloodGroup' | 'address' | 'city';
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_PATTERN = /^\+?[0-9\s()-]{7,20}$/;
 const BLOOD_GROUPS = new Set(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']);
 
 function validateProfile(profile: UserProfile): FieldErrors {
@@ -38,7 +37,6 @@ function validateProfile(profile: UserProfile): FieldErrors {
   const email = profile.email.trim();
   const bloodGroup = profile.bloodGroup.trim().toUpperCase();
   const dateOfBirth = profile.dateOfBirth.trim();
-  const guardianPhone = profile.guardianPhone.trim();
 
   if (!name) errors.name = 'Full name is required.';
   else if (name.length > 100) errors.name = 'Name must be 100 characters or less.';
@@ -51,11 +49,9 @@ function validateProfile(profile: UserProfile): FieldErrors {
       errors.dateOfBirth = 'Use a valid past date in DD/MM/YYYY format.';
     }
   }
-  if (guardianPhone && !PHONE_PATTERN.test(guardianPhone)) errors.guardianPhone = 'Enter a valid guardian phone number.';
   if (profile.gender.trim().length > 40) errors.gender = 'Gender must be 40 characters or less.';
   if (profile.address.trim().length > 250) errors.address = 'Address must be 250 characters or less.';
   if (profile.city.trim().length > 100) errors.city = 'City must be 100 characters or less.';
-  if (profile.guardianName.trim().length > 100) errors.guardianName = 'Guardian name must be 100 characters or less.';
   return errors;
 }
 
@@ -107,8 +103,6 @@ export default function ProfileScreen({ navigation }: any) {
         bloodGroup: profile.bloodGroup.trim().toUpperCase(),
         address: profile.address.trim(),
         city: profile.city.trim(),
-        guardianName: profile.guardianName.trim(),
-        guardianPhone: profile.guardianPhone.trim(),
       });
       setProfile({ ...EMPTY_PROFILE, ...saved });
       setDirty(false);
@@ -161,12 +155,6 @@ export default function ProfileScreen({ navigation }: any) {
         <View style={styles.card}>
           <Field label="Address" value={profile.address} error={errors.address} onChangeText={(v) => updateField('address', v)} placeholder="House number, street, locality" multiline />
           <Field label="City" value={profile.city} error={errors.city} onChangeText={(v) => updateField('city', v)} placeholder="Your city" last />
-        </View>
-
-        <Text style={styles.sectionTitle}>Guardian details</Text>
-        <View style={styles.card}>
-          <Field label="Guardian name" value={profile.guardianName} error={errors.guardianName} onChangeText={(v) => updateField('guardianName', v)} placeholder="Trusted guardian's name" />
-          <Field label="Guardian phone" value={profile.guardianPhone} error={errors.guardianPhone} onChangeText={(v) => updateField('guardianPhone', v)} placeholder="+91XXXXXXXXXX" keyboardType="phone-pad" last />
         </View>
 
         <TouchableOpacity style={[styles.saveButton, (!dirty || saving) && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>

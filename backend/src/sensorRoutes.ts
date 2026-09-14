@@ -142,32 +142,6 @@ sensorRouter.post('/api/heartbeat', async (req, res) => {
   return res.json({ ok: true });
 });
 
-// ── guardian check: is user's heartbeat still alive? ─────────────────────────
-// Call this from a cron job or guardian poll every 30s
-sensorRouter.get('/api/heartbeat/check/:phone', async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { phone: req.params.phone } });
-  if (!user) return res.status(404).json({ error: 'User not found' });
-
-  const hb = await prisma.$queryRaw<{ timestamp: bigint; lat: number | null; lng: number | null }[]>`
-    SELECT "timestamp", "lat", "lng" FROM "Heartbeat" WHERE "userId" = ${user.id}
-  `;
-
-  if (hb.length === 0) return res.json({ alive: null, lastSeen: null });
-
-  const last    = Number(hb[0].timestamp);
-  const elapsed = Date.now() - last;
-  const alive   = elapsed < 60_000; // 60 second threshold
-
-  return res.json({
-    alive,
-    lastSeen:     last,
-    elapsedMs:    elapsed,
-    lastLat:      hb[0].lat,
-    lastLng:      hb[0].lng,
-    guardianAlert: !alive,  // frontend uses this to show alert
-  });
-});
-
 // ── recent sensor events for a user ──────────────────────────────────────────
 sensorRouter.get('/api/sensor-events/:phone', async (req, res) => {
   const user = await prisma.user.findUnique({ where: { phone: req.params.phone } });
