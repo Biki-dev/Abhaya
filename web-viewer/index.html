@@ -113,6 +113,7 @@
         const data = await response.json();
         if (!response.ok) return showError(data.error || 'This link is invalid or expired.');
         session = data;
+        $('error').hidden = true;
         $('userName').textContent = data.user?.name || 'Abhaya user';
         $('started').textContent = formatDate(data.startedAt) + ' · ' + formatTime(data.startedAt);
         $('expires').textContent = formatDate(data.expiresAt) + ' · ' + formatTime(data.expiresAt);
