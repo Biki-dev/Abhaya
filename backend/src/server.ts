@@ -95,6 +95,10 @@ export function startServer() {
     res.json({ ok: true });
   });
 
+  app.get('/api/trusted-contact/version', (_req, res) => {
+    res.json({ feature: 'trusted-contact-live-viewer', version: 2 });
+  });
+
   // ── Users ─────────────────────────────────────────────────────────────────
   app.post('/api/users/upsert', async (req, res) => {
     const parsed = upsertUserSchema.safeParse(req.body);
