@@ -36,10 +36,11 @@
     .ack { margin-top:3px; }
     .ack-note { margin:10px 0 0; color:var(--muted); font-size:12px; line-height:1.45; text-align:center; }
     .disclaimer { margin-top:16px; padding-top:13px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; line-height:1.45; }
-    .error { position:fixed; z-index:1100; inset:0; display:grid; place-items:center; padding:24px; background:#07101dee; }
-    .error-card { width:min(420px,100%); padding:24px; border:1px solid #ff7b7255; border-radius:20px; background:var(--panel); text-align:center; }
-    .error-card h2 { margin:0 0 10px; font:700 22px 'Space Grotesk'; }
-    .error-card p { color:var(--muted); line-height:1.5; }
+    .error { position:fixed; z-index:1100; top:18px; right:18px; width:min(390px,calc(100vw - 36px)); }
+    .error-card { position:relative; width:100%; padding:17px 44px 17px 18px; border:1px solid #ff7b7255; border-radius:16px; background:var(--panel); box-shadow:0 18px 50px #0008; }
+    .error-card h2 { margin:0 0 5px; font:700 16px 'Space Grotesk'; }
+    .error-card p { margin:0; color:var(--muted); line-height:1.45; font-size:13px; }
+    .close-error { position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0; border-radius:8px; color:var(--ink); background:transparent; font-size:20px; line-height:1; }
     .leaflet-control-attribution { font-size:9px; }
     @media (max-width:600px) { .panel { top:auto; bottom:16px; left:12px; width:calc(100vw - 24px); padding:16px; } }
   </style>
@@ -55,7 +56,7 @@
     <p id="ackNote" class="ack-note">Your acknowledgement is shared with the person who started this session.</p>
     <div class="disclaimer"><strong>Important:</strong> This page shares location and session status only. It is not emergency-service dispatch. If someone is in immediate danger, call local emergency services.</div>
   </main>
-  <div id="error" class="error" hidden><div class="error-card"><h2>Safety link unavailable</h2><p id="errorText">This link is invalid, expired, or temporarily unavailable.</p></div></div>
+  <div id="error" class="error" hidden role="alert"><div class="error-card"><button id="closeError" class="close-error" type="button" aria-label="Dismiss notification">×</button><h2>Safety link notice</h2><p id="errorText">This link is invalid, expired, or temporarily unavailable.</p></div></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
   <script>
@@ -70,15 +71,13 @@
     const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     function formatTime(value) { return value ? new Date(value).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '—'; }
     function formatDate(value) { return value ? new Date(value).toLocaleDateString([], {month:'short', day:'numeric'}) : '—'; }
-    function showError(message) {
-      if (session) {
-        $('statusText').textContent = 'Live updates unavailable · last location shown';
-        $('status').className = 'status amber';
-        return;
-      }
+    let errorTimer;
+    function showError(message, disconnect = false) {
       $('errorText').textContent = message;
       $('error').hidden = false;
-      if (socket) socket.disconnect();
+      clearTimeout(errorTimer);
+      errorTimer = setTimeout(() => { $('error').hidden = true; }, 9000);
+      if (disconnect && socket) socket.disconnect();
     }
     function setStatus(status) {
       const labels = {ACTIVE:'Active · tracking live', ACKNOWLEDGED:'Acknowledged · contact is here', RESOLVED:'Resolved · session ended', EXPIRED:'Expired · last location shown'};
@@ -97,23 +96,18 @@
     }
     function connect() {
       socket = io(API_BASE, { transports:['websocket','polling'] });
-      socket.on('connect', () => socket.emit('join-session', session?.id || token));
+      socket.on('connect', () => socket.emit('join-session', token));
       socket.on('location-updated', data => updateLocation(data.lat, data.lng, data.accuracy, data.timestamp));
-      socket.on('session-error', data => {
-        if (!session) return showError(data.message);
-        $('statusText').textContent = 'Live updates unavailable · last location shown';
-        $('status').className = 'status amber';
-      });
+      socket.on('session-error', data => showError(data.message));
       socket.on('disconnect', () => { if (session && session.status === 'ACTIVE') { $('statusText').textContent = 'Connection interrupted · retrying…'; $('status').className = 'status amber'; } });
     }
     async function load() {
-      if (!token || token.length < 6) return showError('This link is missing its safety session token.');
+      if (!token || token.length < 6) return showError('This link is missing its safety session token.', true);
       try {
         const response = await fetch(`${API_BASE}/api/safety-sessions/public/${encodeURIComponent(token)}`);
         const data = await response.json();
-        if (!response.ok) return showError(data.error || 'This link is invalid or expired.');
+        if (!response.ok) return showError(data.error || 'This link is invalid or expired.', true);
         session = data;
-        $('error').hidden = true;
         $('userName').textContent = data.user?.name || 'Abhaya user';
         $('started').textContent = formatDate(data.startedAt) + ' · ' + formatTime(data.startedAt);
         $('expires').textContent = formatDate(data.expiresAt) + ' · ' + formatTime(data.expiresAt);
@@ -121,8 +115,9 @@
         setStatus(data.status);
         updateLocation(data.lastLat, data.lastLng, data.lastAccuracy, data.startedAt);
         if (data.status === 'ACTIVE') connect();
-      } catch (error) { showError('Unable to reach Abhaya right now. Please try again shortly.'); }
+      } catch (error) { showError('Unable to reach Abhaya right now. Please try again shortly.', true); }
     }
+    $('closeError').addEventListener('click', () => { $('error').hidden = true; clearTimeout(errorTimer); });
     $('ackButton').addEventListener('click', async () => {
       $('ackButton').disabled = true;
       try {
