@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet, Text, View, TouchableOpacity,
-  Modal, Vibration, ActivityIndicator, Share,
+  Modal, Vibration, ActivityIndicator, Share, Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -207,9 +207,16 @@ export default function HomeMapScreen({ navigation }: any) {
             onPress={async () => {
               const activeSession = trustedContactSession || session;
               if (!activeSession) return;
-              const url = activeSession.viewerUrl;
+              const viewerBase = process.env.EXPO_PUBLIC_VIEWER_URL?.trim() || 'https://rakhshitahtml.netlify.app/';
+              const url = activeSession.viewerUrl
+                || (activeSession.publicToken ? `${viewerBase}?t=${encodeURIComponent(activeSession.publicToken)}` : null)
+                || (activeSession.id ? `${viewerBase}?s=${encodeURIComponent(activeSession.id)}` : null);
+              if (!url) {
+                Alert.alert('Live link unavailable', 'The safety session has not returned a shareable link yet. Please try again in a moment.');
+                return;
+              }
               await Share.share({
-                message: `I'm in a crime zone. Follow my live location here: ${url}`,
+                message: `Follow my live location here: ${url}`,
                 url,
               });
             }}
