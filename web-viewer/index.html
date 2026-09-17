@@ -88,9 +88,13 @@
     }
     function connect() {
       socket = io(API_BASE, { transports:['websocket','polling'] });
-      socket.on('connect', () => socket.emit('join-session', token));
+      socket.on('connect', () => socket.emit('join-session', session?.id || token));
       socket.on('location-updated', data => updateLocation(data.lat, data.lng, data.accuracy, data.timestamp));
-      socket.on('session-error', data => showError(data.message));
+      socket.on('session-error', data => {
+        if (!session) return showError(data.message);
+        $('statusText').textContent = 'Live updates unavailable · last location shown';
+        $('status').className = 'status amber';
+      });
       socket.on('disconnect', () => { if (session && session.status === 'ACTIVE') { $('statusText').textContent = 'Connection interrupted · retrying…'; $('status').className = 'status amber'; } });
     }
     async function load() {

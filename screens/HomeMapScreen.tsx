@@ -207,10 +207,12 @@ export default function HomeMapScreen({ navigation }: any) {
             onPress={async () => {
               const activeSession = trustedContactSession || session;
               if (!activeSession) return;
-              const viewerBase = process.env.EXPO_PUBLIC_VIEWER_URL?.trim() || 'https://abhayamain.netlify.app/';
-              const url = activeSession.viewerUrl
-                || (activeSession.publicToken ? `${viewerBase}?t=${encodeURIComponent(activeSession.publicToken)}` : null)
-                || (activeSession.id ? `${viewerBase}?s=${encodeURIComponent(activeSession.id)}` : null);
+              const viewerBase = (process.env.EXPO_PUBLIC_VIEWER_URL?.trim() || 'https://abhayamain.netlify.app/')
+                .replace(/[?#].*$/, '')
+                .replace(/\/+$/, '');
+              const url = activeSession.publicToken
+                ? `${viewerBase}?t=${encodeURIComponent(activeSession.publicToken)}`
+                : activeSession.viewerUrl || (activeSession.id ? `${viewerBase}?s=${encodeURIComponent(activeSession.id)}` : null);
               if (!url) {
                 Alert.alert('Live link unavailable', 'The safety session has not returned a shareable link yet. Please try again in a moment.');
                 return;
