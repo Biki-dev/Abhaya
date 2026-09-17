@@ -70,7 +70,16 @@
     const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     function formatTime(value) { return value ? new Date(value).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '—'; }
     function formatDate(value) { return value ? new Date(value).toLocaleDateString([], {month:'short', day:'numeric'}) : '—'; }
-    function showError(message) { $('errorText').textContent = message; $('error').hidden = false; if (socket) socket.disconnect(); }
+    function showError(message) {
+      if (session) {
+        $('statusText').textContent = 'Live updates unavailable · last location shown';
+        $('status').className = 'status amber';
+        return;
+      }
+      $('errorText').textContent = message;
+      $('error').hidden = false;
+      if (socket) socket.disconnect();
+    }
     function setStatus(status) {
       const labels = {ACTIVE:'Active · tracking live', ACKNOWLEDGED:'Acknowledged · contact is here', RESOLVED:'Resolved · session ended', EXPIRED:'Expired · last location shown'};
       $('statusText').textContent = labels[status] || status;
