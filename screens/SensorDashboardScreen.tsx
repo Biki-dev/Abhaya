@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSensorFusion, SensorData }         from '../hooks/useSensorFusion';
+import { useSensorFusion, SensorData } from '../hooks/useSensorFusion';
 import { logSensorEvent, getLocalEvents, SensorEvent } from '../services/sensorDb';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,11 +37,11 @@ function SensorBar({ value, color, label }: { value: number; color: string; labe
   );
 }
 const sb = StyleSheet.create({
-  row:   { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   label: { width: 24, fontSize: 11, color: colors.muted, fontFamily: 'Manrope_500Medium' },
   track: { flex: 1, height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 },
-  fill:  { height: '100%', borderRadius: 4 },
-  val:   { width: 52, fontSize: 11, color: colors.textSecondary, textAlign: 'right', fontFamily: 'Manrope_500Medium' },
+  fill: { height: '100%', borderRadius: 4 },
+  val: { width: 52, fontSize: 11, color: colors.textSecondary, textAlign: 'right', fontFamily: 'Manrope_500Medium' },
 });
 
 // ── status pill ───────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ function StatusPill({ label, active, color }: { label: string; active: boolean; 
 }
 const pill = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, marginRight: 8, marginBottom: 8 },
-  dot:  { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
   text: { fontSize: 11, fontFamily: 'Manrope_600SemiBold' },
 });
 
@@ -69,7 +69,7 @@ function Card({ title, children, accent }: { title: string; children: React.Reac
   );
 }
 const card = StyleSheet.create({
-  wrap:  { backgroundColor: colors.surface, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.md },
+  wrap: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.md },
   title: { ...typography.bodySmall, color: colors.muted, marginBottom: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
 });
 
@@ -77,8 +77,8 @@ const card = StyleSheet.create({
 export default function SensorDashboardScreen({ navigation }: any) {
   const { isPremiumActive } = useSubscription();
   const [sensorActive, setSensorActive] = useState(true);
-  const [userId,       setUserId]       = useState('');
-  const [eventLog,     setEventLog]     = useState<SensorEvent[]>([]);
+  const [userId, setUserId] = useState('');
+  const [eventLog, setEventLog] = useState<SensorEvent[]>([]);
 
   const sensors = useSensorFusion(sensorActive);
 
@@ -105,7 +105,7 @@ export default function SensorDashboardScreen({ navigation }: any) {
     if (!p.impactDetected && m.impactDetected && userId) {
       logSensorEvent(userId, 'fall_detected', {
         magnitude: sensors.accelerometer.magnitude,
-        gyro:      sensors.gyroscope,
+        gyro: sensors.gyroscope,
       }, sensors.gps?.latitude ?? null, sensors.gps?.longitude ?? null)
         .then(refreshLog);
     }
@@ -125,7 +125,7 @@ export default function SensorDashboardScreen({ navigation }: any) {
 
   // normalise accelerometer for bars: 0 g = 0.5 on bar, ±4g = 0 or 1
   const normAccel = (v: number) => clamp01((v + 4) / 8);
-  const normGyro  = (v: number) => clamp01((v + 10) / 20);
+  const normGyro = (v: number) => clamp01((v + 10) / 20);
   const { accelerometer: acc, gyroscope: gyr, gps, mic, motion } = sensors;
 
   if (!isPremiumActive) {
@@ -165,42 +165,161 @@ export default function SensorDashboardScreen({ navigation }: any) {
 
       {/* motion status pills */}
       <View style={s.pills}>
-        <StatusPill label="Fall"       active={motion.isFalling}      color={colors.danger} />
-        <StatusPill label="Impact"     active={motion.impactDetected}  color="#FF6B00" />
-        <StatusPill label="Shaking"    active={motion.isShaking}       color={colors.warning} />
-        <StatusPill label="Stationary" active={motion.isStationary}    color={colors.safe} />
-        <StatusPill label="Mic Peak"   active={mic.peakDetected}       color="#A855F7" />
-        <StatusPill label="GPS"        active={gps !== null}           color={colors.primary} />
+        <StatusPill
+          label="Fall"
+          active={motion.isFalling}
+          color={colors.danger}
+        />
+        <StatusPill
+          label="Impact"
+          active={motion.impactDetected}
+          color={colors.warning}
+        />
+        <StatusPill
+          label="Shaking"
+          active={motion.isShaking}
+          color={colors.logoGreen}
+        />
+        <StatusPill
+          label="Stationary"
+          active={motion.isStationary}
+          color={colors.safe}
+        />
+        <StatusPill
+          label="Mic Peak"
+          active={mic.peakDetected}
+          color={colors.primaryDark}
+        />
+        <StatusPill
+          label="GPS"
+          active={gps !== null}
+          color={colors.primary}
+        />
       </View>
 
       {/* accelerometer */}
-      <Card title="Accelerometer  (g)" accent={motion.impactDetected ? colors.danger : undefined}>
-        <SensorBar value={normAccel(acc.x)} color="#3B82F6" label="X" />
-        <SensorBar value={normAccel(acc.y)} color="#10B981" label="Y" />
-        <SensorBar value={normAccel(acc.z)} color="#F59E0B" label="Z" />
+      <Card
+        title="Accelerometer  (g)"
+        accent={motion.impactDetected ? colors.danger : undefined}
+      >
+        <SensorBar
+          value={normAccel(acc.x)}
+          color={colors.logoDeep}
+          label="X"
+        />
+        <SensorBar
+          value={normAccel(acc.y)}
+          color={colors.primary}
+          label="Y"
+        />
+        <SensorBar
+          value={normAccel(acc.z)}
+          color={colors.logoMint}
+          label="Z"
+        />
+
         <View style={s.rowBetween}>
-          <Text style={s.meta}>Magnitude: {fmtNum(acc.magnitude)} g</Text>
-          {motion.impactDetected && <Text style={[s.meta, { color: colors.danger, fontFamily: 'Manrope_700Bold' }]}>IMPACT</Text>}
-          {motion.isFalling      && <Text style={[s.meta, { color: '#FF6B00' }]}>FALLING</Text>}
+          <Text style={s.meta}>
+            Magnitude: {fmtNum(acc.magnitude)} g
+          </Text>
+
+          {motion.impactDetected && (
+            <Text
+              style={[
+                s.meta,
+                {
+                  color: colors.danger,
+                  fontFamily: 'Manrope_700Bold',
+                },
+              ]}
+            >
+              IMPACT
+            </Text>
+          )}
+
+          {motion.isFalling && (
+            <Text
+              style={[
+                s.meta,
+                {
+                  color: colors.warning,
+                },
+              ]}
+            >
+              FALLING
+            </Text>
+          )}
         </View>
-        <Text style={s.meta}>Shakes in 1.5s window: {motion.shakeCount}</Text>
+
+        <Text style={s.meta}>
+          Shakes in 1.5s window: {motion.shakeCount}
+        </Text>
       </Card>
 
       {/* gyroscope */}
       <Card title="Gyroscope  (rad/s)">
-        <SensorBar value={normGyro(gyr.x)} color="#8B5CF6" label="X" />
-        <SensorBar value={normGyro(gyr.y)} color="#EC4899" label="Y" />
-        <SensorBar value={normGyro(gyr.z)} color="#06B6D4" label="Z" />
-        <Text style={s.meta}>Angular velocity magnitude: {fmtNum(Math.sqrt(gyr.x*gyr.x+gyr.y*gyr.y+gyr.z*gyr.z))} rad/s</Text>
+        <SensorBar
+          value={normGyro(gyr.x)}
+          color={colors.logoDeep}
+          label="X"
+        />
+        <SensorBar
+          value={normGyro(gyr.y)}
+          color={colors.primary}
+          label="Y"
+        />
+        <SensorBar
+          value={normGyro(gyr.z)}
+          color={colors.logoMint}
+          label="Z"
+        />
+
+        <Text style={s.meta}>
+          Angular velocity magnitude:{' '}
+          {fmtNum(
+            Math.sqrt(
+              gyr.x * gyr.x +
+              gyr.y * gyr.y +
+              gyr.z * gyr.z
+            )
+          )}{' '}
+          rad/s
+        </Text>
       </Card>
 
       {/* microphone */}
-      <Card title="Microphone" accent={mic.peakDetected ? '#A855F7' : undefined}>
-        <SensorBar value={mic.level} color="#A855F7" label="dB" />
+      <Card
+        title="Microphone"
+        accent={mic.peakDetected ? colors.primaryDark : undefined}
+      >
+        <SensorBar
+          value={mic.level}
+          color={colors.primaryDark}
+          label="dB"
+        />
+
         <View style={s.rowBetween}>
-          <Text style={s.meta}>Level: {Math.round(mic.level * 100)}%</Text>
-          <Text style={s.meta}>{mic.isListening ? '🔴 Listening' : '⚫ Off'}</Text>
-          {mic.peakDetected && <Text style={[s.meta, { color: '#A855F7', fontFamily: 'Manrope_700Bold' }]}>DISTRESS PEAK</Text>}
+          <Text style={s.meta}>
+            Level: {Math.round(mic.level * 100)}%
+          </Text>
+
+          <Text style={s.meta}>
+            {mic.isListening ? '🔴 Listening' : '⚫ Off'}
+          </Text>
+
+          {mic.peakDetected && (
+            <Text
+              style={[
+                s.meta,
+                {
+                  color: colors.primaryDark,
+                  fontFamily: 'Manrope_700Bold',
+                },
+              ]}
+            >
+              DISTRESS PEAK
+            </Text>
+          )}
         </View>
       </Card>
 
@@ -250,10 +369,10 @@ export default function SensorDashboardScreen({ navigation }: any) {
 
 function eventColor(type: string): string {
   if (type.includes('fall') || type.includes('impact')) return colors.danger;
-  if (type.includes('shake'))  return colors.warning;
-  if (type.includes('audio'))  return '#A855F7';
-  if (type.includes('sos'))    return '#EF4444';
-  if (type.includes('gps'))    return colors.primary;
+  if (type.includes('shake')) return colors.warning;
+  if (type.includes('audio')) return '#A855F7';
+  if (type.includes('sos')) return '#EF4444';
+  if (type.includes('gps')) return colors.primary;
   if (type.includes('checkin')) return colors.safe;
   return colors.muted;
 }
@@ -267,35 +386,35 @@ const s = StyleSheet.create({
   upgradeButtonText: { ...typography.body, color: '#fff', fontFamily: 'Manrope_700Bold' },
   backLockedButton: { padding: spacing.md, marginTop: spacing.sm },
   backLockedText: { ...typography.bodySmall, color: colors.primary },
-  content:   { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.lg, marginBottom: spacing.md },
-  backBtn:   { flexDirection: 'row', alignItems: 'center' },
-  backText:  { ...typography.bodySmall, color: colors.textSecondary, marginLeft: 2 },
-  title:     { ...typography.heading, color: colors.text },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.lg, marginBottom: spacing.md },
+  backBtn: { flexDirection: 'row', alignItems: 'center' },
+  backText: { ...typography.bodySmall, color: colors.textSecondary, marginLeft: 2 },
+  title: { ...typography.heading, color: colors.text },
   toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
-  toggleText:{ fontSize: 12, fontFamily: 'Manrope_700Bold' },
-  pills:     { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
-  meta:      { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
-  gpsVal:    { ...typography.subheading, color: colors.text, marginBottom: spacing.md },
-  gpsGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  gpsItem:   { width: '45%' },
-  gpsLbl:    { ...typography.caption, color: colors.muted },
-  gpsNum:    { ...typography.body,    color: colors.text, fontFamily: 'Manrope_600SemiBold' },
-  rowBetween:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.sm },
-  meshBtn:   { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  toggleText: { fontSize: 12, fontFamily: 'Manrope_700Bold' },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
+  meta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  gpsVal: { ...typography.subheading, color: colors.text, marginBottom: spacing.md },
+  gpsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  gpsItem: { width: '45%' },
+  gpsLbl: { ...typography.caption, color: colors.muted },
+  gpsNum: { ...typography.body, color: colors.text, fontFamily: 'Manrope_600SemiBold' },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.sm },
+  meshBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   meshBtnText: { fontSize: 12, color: '#fff', fontFamily: 'Manrope_700Bold' },
   meshStats: { alignItems: 'flex-end' },
-  peerRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
-  peerName:  { flex: 1, ...typography.bodySmall, color: colors.text },
-  peerRssi:  { ...typography.caption, color: colors.muted },
+  peerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
+  peerName: { flex: 1, ...typography.bodySmall, color: colors.text },
+  peerRssi: { ...typography.caption, color: colors.muted },
   peerRelay: { ...typography.caption, color: colors.warning, fontFamily: 'Manrope_700Bold' },
-  meshSosBtn:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing.lg, backgroundColor: colors.danger, borderRadius: borderRadius.md, paddingVertical: 12 },
+  meshSosBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing.lg, backgroundColor: colors.danger, borderRadius: borderRadius.md, paddingVertical: 12 },
   meshSosBtnText: { color: '#fff', fontFamily: 'Manrope_700Bold', fontSize: 13 },
-  evtRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  evtDot:    { width: 8, height: 8, borderRadius: 4 },
-  evtInfo:   { flex: 1 },
-  evtType:   { ...typography.bodySmall, color: colors.text, fontFamily: 'Manrope_600SemiBold', textTransform: 'capitalize' },
-  evtTime:   { ...typography.caption, color: colors.muted },
-  refreshBtn:{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.md },
-  refreshText:{ ...typography.caption, color: colors.primary },
+  evtRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+  evtDot: { width: 8, height: 8, borderRadius: 4 },
+  evtInfo: { flex: 1 },
+  evtType: { ...typography.bodySmall, color: colors.text, fontFamily: 'Manrope_600SemiBold', textTransform: 'capitalize' },
+  evtTime: { ...typography.caption, color: colors.muted },
+  refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.md },
+  refreshText: { ...typography.caption, color: colors.primary },
 });

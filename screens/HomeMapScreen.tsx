@@ -35,7 +35,7 @@ export default function HomeMapScreen({ navigation }: any) {
     updateLocation,
   } = useSOSContextFull();
 
-  const [userId, setUserId]   = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Unknown');
   const [mapHTML, setMapHTML] = useState(DEFAULT_HTML);
   const initialMapSet = useRef(false);
@@ -105,20 +105,20 @@ export default function HomeMapScreen({ navigation }: any) {
       if (userId) logSensorEvent(userId, 'fall_detected',
         { magnitude: sensors.accelerometer.magnitude },
         userLocation?.latitude ?? null,
-        userLocation?.longitude ?? null).catch(() => {});
+        userLocation?.longitude ?? null).catch(() => { });
       triggerSOS('📱 Fall detected — impact registered');
     }
     if (!p.isShaking && m.isShaking) {
       Vibration.vibrate(400);
       if (userId) logSensorEvent(userId, 'shake_detected', { count: m.shakeCount },
         userLocation?.latitude ?? null,
-        userLocation?.longitude ?? null).catch(() => {});
+        userLocation?.longitude ?? null).catch(() => { });
       triggerSOS('📳 Rapid shaking detected');
     }
     if (!pPeak.current && sensors.mic.peakDetected && userId) {
       logSensorEvent(userId, 'audio_peak', { level: sensors.mic.level },
         userLocation?.latitude ?? null,
-        userLocation?.longitude ?? null).catch(() => {});
+        userLocation?.longitude ?? null).catch(() => { });
     }
     pPeak.current = sensors.mic.peakDetected;
     prevMotion.current = m;
@@ -273,9 +273,10 @@ export default function HomeMapScreen({ navigation }: any) {
             <View style={s.legendRow}>
               <Text style={s.legendTitle}>Crime zones</Text>
               <View style={s.legendPills}>
-                {['#EF4444', '#F97316', '#F59E0B', '#84CC16'].map(c => (
-                  <View key={c} style={[s.legendDot, { backgroundColor: c }]} />
-                ))}
+                {[colors.logoDeep, colors.safe, colors.logoGreen, colors.logoMint].map(
+                  c => (
+                    <View key={c} style={[s.legendDot, { backgroundColor: c }]} />
+                  ))}
               </View>
             </View>
             <Text style={s.hintSmall}>

@@ -1,28 +1,40 @@
-// Design System & Theme for Abhaya - Professional Minimalist
+// Design System & Theme for Abhaya
+// Logo-matched: Mint • Emerald • Deep Teal
+
 export const colors = {
   // Core theme
-  bg: '#FAFBFC',
+  bg: '#F6FFFB',
   surface: '#FFFFFF',
-  card: '#F8FAFB',
-  
+  card: '#F1FBF7',
+
   // Text colors
-  text: '#1A202C',
-  textSecondary: '#718096',
-  muted: '#A0AEC0',
-  
-  // Accent colors
-  primary: '#3B82F6',
+  text: '#12332D',
+  textSecondary: '#5F7D75',
+  muted: '#93AAA3',
+
+  // Brand colors
+  primary: '#00A887',
+  primaryDark: '#00796B',
+  primaryLight: '#D9F8EC',
+
+  // Status colors
   danger: '#EF4444',
   safe: '#10B981',
   warning: '#F59E0B',
-  
+
   // UI elements
-  active: '#10B981',
-  inactive: '#D1D5DB',
-  border: '#E5E7EB',
-  
+  active: '#00A887',
+  inactive: '#D6E3DF',
+  border: '#DCEBE5',
+
+  // Logo gradient colors
+  logoMint: '#7AF2B5',
+  logoGreen: '#19C995',
+  logoTeal: '#008F7A',
+  logoDeep: '#005E55',
+
   // Overlay
-  overlay: 'rgba(26, 32, 44, 0.75)',
+  overlay: 'rgba(18, 51, 45, 0.72)',
 };
 
 export const spacing = {
