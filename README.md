@@ -170,6 +170,8 @@ RevenueCat uses `CustomerInfo.entitlements.active` as the source of truth for ea
 
 Each startup, purchase, and restore also writes a **purchase-history snapshot** to the backend (`SubscriptionSnapshot`) for the authenticated user. It contains the Test Store marker, RevenueCat customer ID, active entitlement names, purchased product identifiers, and available RevenueCat dates. This is an audit/support record only: the client never treats the database snapshot as proof of entitlement, and no fake `isPremium` flag is stored. Apply the migration with `cd backend && npm run prisma:migrate` after setting `DATABASE_URL`.
 
+The trusted-contact fields use PostgreSQL-generated defaults for `publicToken` and `expiresAt`, so a hosting provider running `prisma db push` can add them to existing `SafetySession` rows without a destructive reset. Production deployments should still prefer `cd backend && npm run prisma:migrate` to apply the checked-in migrations.
+
 #### Exact Test Store setup
 
 1. In RevenueCat, create or open the project's **Test Store** and copy its public iOS and Android Test Store SDK keys into a local `.env` file. Never use secret RevenueCat API keys in the app.

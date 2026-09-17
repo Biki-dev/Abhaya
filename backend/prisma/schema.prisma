@@ -51,14 +51,14 @@ model SubscriptionSnapshot {
 model SafetySession {
   id             String    @id @default(cuid())
   userId         Int
-  publicToken    String    @unique @default(cuid())
+  publicToken    String    @unique @default(dbgenerated("md5(random()::text || clock_timestamp()::text)"))
   status         String    @default("ACTIVE") // ACTIVE, ACKNOWLEDGED, COMPLETED
   reason         String?
   lastLat        Float?
   lastLng        Float?
   lastAccuracy   Float?
   startedAt      DateTime  @default(now())
-  expiresAt      DateTime
+  expiresAt      DateTime  @default(dbgenerated("CURRENT_TIMESTAMP + interval '24 hours'"))
   acknowledgedAt DateTime?
   endedAt        DateTime?
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
