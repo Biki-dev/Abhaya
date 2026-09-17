@@ -33,6 +33,8 @@ export default function HomeMapScreen({ navigation }: any) {
     setShowPoliceBanner,
     keywordState,
     updateLocation,
+    trustedContactSession,
+    resolveTrustedContactSession,
   } = useSOSContextFull();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -198,13 +200,14 @@ export default function HomeMapScreen({ navigation }: any) {
       </View>
 
       {/* Safety session pill */}
-      {session && (
+      {(session || trustedContactSession) && (
         <View style={s.safetyBar}>
           <TouchableOpacity
             style={s.safetyPill}
             onPress={async () => {
-              const base = 'https://rakhshitahtml.netlify.app';
-              const url = `${base}/?s=${session.id}`;
+              const activeSession = trustedContactSession || session;
+              if (!activeSession) return;
+              const url = activeSession.viewerUrl;
               await Share.share({
                 message: `I'm in a crime zone. Follow my live location here: ${url}`,
                 url,
@@ -212,8 +215,13 @@ export default function HomeMapScreen({ navigation }: any) {
             }}
           >
             <View style={s.liveDot} />
-            <Text style={s.safetyText}>Live Sharing Active · Tap to Share</Text>
+            <Text style={s.safetyText}>Live Safety Link · Tap to Share</Text>
           </TouchableOpacity>
+          {trustedContactSession && (
+            <TouchableOpacity style={s.resolveSafetyButton} onPress={() => void resolveTrustedContactSession()}>
+              <Text style={s.resolveSafetyText}>Resolve</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -344,6 +352,8 @@ const s = StyleSheet.create({
   },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
   safetyText: { fontSize: 11, color: '#EF4444', fontFamily: 'Manrope_700Bold' },
+  resolveSafetyButton: { marginTop: 6, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: colors.safe },
+  resolveSafetyText: { fontSize: 11, color: colors.safe, fontFamily: 'Manrope_700Bold' },
   quickActions: { position: 'absolute', right: spacing.lg, top: 70, gap: 10 },
   quickBtn: {
     width: 46, height: 46, borderRadius: 14, backgroundColor: colors.surface,

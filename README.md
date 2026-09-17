@@ -44,6 +44,7 @@ The name comes from the Sanskrit Word **abhaya** (अभया) — the meaning 
 | Map view | In-app map (`react-native-maps`) shows your current location and any contacts tracking you. |
 | Emergency audio | `react-native-audio-record` captures ambient audio on SOS trigger — stored for context. |
 | Web viewer | Contacts open a web link (rendered via `react-native-webview` + `web-viewer/`) to see your live position. |
+| Trusted-contact live session | SOS and SafeWalk links use a cryptographically random, expiring token. Contacts can view live location, timestamp, accuracy, status, and acknowledge the alert without installing Abhaya. |
 
 ---
 
@@ -66,7 +67,9 @@ When an SOS fires, `SOSContext` does three things in parallel:
 2. Emits `sos:trigger` over the Socket.IO room — the backend broadcasts to all connected contacts.
 3. Sends a push notification via `expo-notifications` to contacts who aren't online.
 
-The **web-viewer** is a lightweight HTML page (no framework) that opens the Socket.IO room in read-only mode and renders a map with the user's coordinates as they stream in.
+The **web-viewer** is a lightweight HTML page (no framework) that opens a token-authorized Socket.IO room, renders a map with the user's coordinates as they stream in, and lets a trusted contact acknowledge the active session.
+
+Trusted-contact links are served from `web-viewer/index.html` and use the `?t=<temporary-token>` format. The backend stores the token, expiry, acknowledgement timestamp, last location accuracy, and session status. Public viewers never receive user phone numbers or payment data. The viewer clearly states that it is not emergency-service dispatch; users should call local emergency services for immediate danger.
 
 ---
 

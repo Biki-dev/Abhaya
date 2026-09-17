@@ -18,6 +18,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
@@ -29,6 +30,8 @@ import {
 import { useSOSWithBackground, SOSCountdownState } from '../hooks/useSOSWithBackground';
 import { logSensorEvent } from '../services/sensorDb';
 import type { PoliceSMSResult } from '../services/policeSOS';
+import { endSafetySession, startSafetySession, SafetySession } from '../services/safetySessions';
+import { getApiBaseUrlCandidates } from '../services/api';
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 type SOSContextType = {
@@ -47,6 +50,10 @@ type SOSContextType = {
   setShowPoliceBanner: (v: boolean) => void;
   /** Keyword detection state (for status pills on HomeMap) */
   keywordState: EIKeywordDetectionState;
+  /** Current expiring trusted-contact session created for SOS, if any. */
+  trustedContactSession: SafetySession | null;
+  /** End the current trusted-contact session as resolved. */
+  resolveTrustedContactSession: () => Promise<void>;
 };
 
 const SOSContext = createContext<SOSContextType | null>(null);
@@ -65,6 +72,9 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
   const [policeLoading, setPoliceLoading]       = useState(false);
   const [policeResult, setPoliceResult]         = useState<PoliceSMSResult | null>(null);
   const [showPoliceBanner, setShowPoliceBanner] = useState(false);
+  const [trustedContactSession, setTrustedContactSession] = useState<SafetySession | null>(null);
+  const trustedSessionRef = useRef<SafetySession | null>(null);
+  const trustedSocketRef = useRef<Socket | null>(null);
 
   // ★ Always-fresh location ref — updated by whoever has GPS (HomeMap / sensors)
   const locationRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -93,6 +103,49 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
     onShowBanner: ()      => setShowPoliceBanner(true),
   });
 
+  const startTrustedContactSession = useCallback(async (reason: string) => {
+    const loc = locationRef.current;
+    if (!userId || !loc || trustedSessionRef.current) return;
+    try {
+      const session = await startSafetySession(userId, loc.latitude, loc.longitude, reason);
+      trustedSessionRef.current = session;
+      setTrustedContactSession(session);
+      const socket = io(getApiBaseUrlCandidates()[0]);
+      trustedSocketRef.current = socket;
+      socket.on('connect', () => {
+        socket.emit('join-session', session.publicToken);
+        socket.emit('location-update', { sessionId: session.id, lat: loc.latitude, lng: loc.longitude });
+      });
+    } catch (error) {
+      console.warn('[SOS] Trusted-contact session unavailable:', error);
+    }
+  }, [userId]);
+
+  const resolveTrustedContactSession = useCallback(async () => {
+    const session = trustedSessionRef.current;
+    const loc = locationRef.current;
+    if (!session || !loc) return;
+    try {
+      await endSafetySession(session.id, loc.latitude, loc.longitude);
+      trustedSocketRef.current?.disconnect();
+      trustedSocketRef.current = null;
+      trustedSessionRef.current = null;
+      setTrustedContactSession(null);
+    } catch (error) {
+      console.warn('[SOS] Failed to resolve trusted-contact session:', error);
+    }
+  }, []);
+
+  const cancelWithResolve = useCallback(() => {
+    cancelSOS();
+    void resolveTrustedContactSession();
+  }, [cancelSOS, resolveTrustedContactSession]);
+
+  const triggerWithTrustedSession = useCallback((reason: string) => {
+    void startTrustedContactSession(reason);
+    triggerSOS(reason);
+  }, [startTrustedContactSession, triggerSOS]);
+
   // ── Keyword detection callback ────────────────────────────────────────────
   const onKeywordDetected = useCallback(
     (confidence: number, label: string) => {
@@ -105,11 +158,11 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
           locationRef.current?.longitude ?? null,
         ).catch(() => {});
       }
-      triggerSOS(
+        triggerWithTrustedSession(
         `🎤 Keyword detected: "${label}" (${(confidence * 100).toFixed(0)}% confidence)`,
       );
     },
-    [userId, triggerSOS],
+    [userId, triggerWithTrustedSession],
   );
 
   // ── Edge Impulse keyword detection hook ──────────────────────────────────
@@ -121,6 +174,10 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
   const updateLocation = useCallback(
     (lat: number, lng: number) => {
       locationRef.current = { latitude: lat, longitude: lng };
+      const session = trustedSessionRef.current;
+      if (session && trustedSocketRef.current?.connected) {
+        trustedSocketRef.current.emit('location-update', { sessionId: session.id, lat, lng });
+      }
     },
     [],
   );
@@ -129,13 +186,15 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
     <SOSContext.Provider
       value={{
         sosState,
-        triggerSOS,
-        cancelSOS,
+        triggerSOS: triggerWithTrustedSession,
+        cancelSOS: cancelWithResolve,
         policeResult,
         policeLoading,
         showPoliceBanner,
         setShowPoliceBanner,
         keywordState,
+        trustedContactSession,
+        resolveTrustedContactSession,
         // Extra helpers that screens can use:
         // @ts-ignore — we extend the type below
         updateLocation,

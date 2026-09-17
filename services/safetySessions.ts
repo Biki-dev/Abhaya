@@ -3,17 +3,23 @@ import { getApiBaseUrlCandidates } from './api';
 export type SafetySession = {
   id: string;
   userId: number;
-  status: 'ACTIVE' | 'COMPLETED';
+  publicToken: string;
+  viewerUrl: string;
+  publicStatus?: 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED' | 'EXPIRED';
+  status: 'ACTIVE' | 'ACKNOWLEDGED' | 'COMPLETED';
   lastLat: number | null;
   lastLng: number | null;
   startedAt: string;
   endedAt: string | null;
+  expiresAt: string;
+  acknowledgedAt?: string | null;
+  reason?: string | null;
   user?: {
     name: string;
   };
 };
 
-export async function startSafetySession(userId: number, lat: number, lng: number, reason?: string): Promise<SafetySession> {
+export async function startSafetySession(userIdOrPhone: number | string, lat: number, lng: number, reason?: string): Promise<SafetySession> {
   const baseUrls = getApiBaseUrlCandidates();
   let lastErr: unknown = null;
 
@@ -22,7 +28,12 @@ export async function startSafetySession(userId: number, lat: number, lng: numbe
       const response = await fetch(`${base}/api/safety-sessions/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, lat, lng, reason }),
+        body: JSON.stringify({
+          ...(typeof userIdOrPhone === 'number' ? { userId: userIdOrPhone } : { userPhone: userIdOrPhone }),
+          lat,
+          lng,
+          reason,
+        }),
       });
 
       if (!response.ok) {

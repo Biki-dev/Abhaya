@@ -81,7 +81,7 @@ export function useSafetyTracking(location: LocationLike | null, zones: CrimeFea
           socketRef.current = socket;
 
           socket.on('connect', () => {
-            socket.emit('join-session', newSession.id);
+            socket.emit('join-session', newSession.publicToken);
             console.log('[useSafetyTracking] Socket connected and joined session:', newSession.id);
           });
         } catch (err) {
@@ -134,7 +134,7 @@ export function useSafetyTracking(location: LocationLike | null, zones: CrimeFea
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        socket.emit('join-session', newSession.id);
+        socket.emit('join-session', newSession.publicToken);
         console.log('[useSafetyTracking] Manual SOS session started:', newSession.id);
       });
     } catch (err) {

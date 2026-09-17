@@ -49,14 +49,19 @@ model SubscriptionSnapshot {
 }
 
 model SafetySession {
-  id        String    @id @default(cuid())
-  userId    Int
-  status    String    @default("ACTIVE") // ACTIVE, COMPLETED
-  lastLat   Float?
-  lastLng   Float?
-  startedAt DateTime  @default(now())
-  endedAt   DateTime?
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  userId         Int
+  publicToken    String    @unique @default(cuid())
+  status         String    @default("ACTIVE") // ACTIVE, ACKNOWLEDGED, COMPLETED
+  reason         String?
+  lastLat        Float?
+  lastLng        Float?
+  lastAccuracy   Float?
+  startedAt      DateTime  @default(now())
+  expiresAt      DateTime
+  acknowledgedAt DateTime?
+  endedAt        DateTime?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
