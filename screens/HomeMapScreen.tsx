@@ -207,7 +207,7 @@ export default function HomeMapScreen({ navigation }: any) {
             onPress={async () => {
               const activeSession = trustedContactSession || session;
               if (!activeSession) return;
-              const viewerBase = process.env.EXPO_PUBLIC_VIEWER_URL?.trim() || 'https://rakhshitahtml.netlify.app/';
+              const viewerBase = process.env.EXPO_PUBLIC_VIEWER_URL?.trim() || 'https://abhayamain.netlify.app/';
               const url = activeSession.viewerUrl
                 || (activeSession.publicToken ? `${viewerBase}?t=${encodeURIComponent(activeSession.publicToken)}` : null)
                 || (activeSession.id ? `${viewerBase}?s=${encodeURIComponent(activeSession.id)}` : null);

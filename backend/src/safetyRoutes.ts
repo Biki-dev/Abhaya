@@ -79,7 +79,7 @@ safetyRouter.post('/api/safety-sessions/start', async (req, res) => {
   });
 
   if (!recentSession || parsed.data.reason) {
-    const viewerUrl = process.env.VIEWER_URL || 'https://rakhshitahtml.netlify.app/';
+    const viewerUrl = process.env.VIEWER_URL || 'https://abhayamain.netlify.app/';
     const trackingLink = `${viewerUrl}?t=${session.publicToken}`;
     const sosReason = parsed.data.reason || 'entered a high-risk zone';
     const message = `SOS! ${user.name} ${sosReason}. Track live location here: ${trackingLink}`;
@@ -96,7 +96,7 @@ safetyRouter.post('/api/safety-sessions/start', async (req, res) => {
 
   return res.status(201).json({
     ...session,
-    viewerUrl: `${process.env.VIEWER_URL || 'https://rakhshitahtml.netlify.app/'}?t=${session.publicToken}`,
+    viewerUrl: `${process.env.VIEWER_URL || 'https://abhayamain.netlify.app/'}?t=${session.publicToken}`,
     publicStatus: publicStatus(session),
   });
 });
