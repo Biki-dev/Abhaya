@@ -125,8 +125,13 @@ safetyRouter.patch('/api/safety-sessions/:id/end', async (req, res) => {
 });
 
 async function getPublicSession(token: string) {
-  return prisma.safetySession.findUnique({
-    where: { publicToken: token },
+  return prisma.safetySession.findFirst({
+    where: {
+      OR: [
+        { publicToken: token },
+        { id: token },
+      ],
+    },
     include: {
       user: {
         select: {

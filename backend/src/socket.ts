@@ -15,8 +15,13 @@ export function setupSocket(httpServer: HttpServer) {
 
     socket.on('join-session', async (sessionToken: string) => {
       if (typeof sessionToken !== 'string' || sessionToken.length < 16) return;
-      const session = await prisma.safetySession.findUnique({
-        where: { publicToken: sessionToken },
+      const session = await prisma.safetySession.findFirst({
+        where: {
+          OR: [
+            { publicToken: sessionToken },
+            { id: sessionToken },
+          ],
+        },
         select: { id: true, expiresAt: true },
       });
       if (!session || session.expiresAt <= new Date()) {
