@@ -16,7 +16,6 @@ import { AppState, AppStateStatus, Vibration } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import {
-  requestSOSNotificationPermissions,
   setupSOSNotificationCategories,
   showSOSCountdownNotification,
   dismissSOSCountdownNotification,
@@ -68,7 +67,6 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
 
   // ── Setup: permissions + categories ──────────────────────────────────────
   useEffect(() => {
-    requestSOSNotificationPermissions();
     setupSOSNotificationCategories();
   }, []);
 

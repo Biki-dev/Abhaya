@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import AppStack from './AppStack';
 import { initContactsFromBackend } from '../services/emergencyContacts';
+import PermissionExplainerScreen, { PERMISSIONS_ONBOARDING_KEY } from '../screens/PermissionExplainerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +36,7 @@ export default function RootNavigator() {
     isLoading: true,
     userToken: null,
   });
+  const [permissionsComplete, setPermissionsComplete] = useState(false);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -50,6 +52,8 @@ export default function RootNavigator() {
           initContactsFromBackend().catch(() => {});
 
           setAuthState({ isLoading: false, userToken: userData.phone ?? null });
+          const permissionSetup = await AsyncStorage.getItem(PERMISSIONS_ONBOARDING_KEY);
+          setPermissionsComplete(permissionSetup === 'true');
         } else {
           setAuthState({ isLoading: false, userToken: null });
         }
@@ -64,6 +68,12 @@ export default function RootNavigator() {
     // After onboarding, pull contacts from backend in background
     initContactsFromBackend().catch(() => {});
     setAuthState({ isLoading: false, userToken: phone });
+    setPermissionsComplete(false);
+  };
+
+  const handlePermissionsComplete = async () => {
+    await AsyncStorage.setItem(PERMISSIONS_ONBOARDING_KEY, 'true');
+    setPermissionsComplete(true);
   };
 
   const signOut = async () => {
@@ -94,6 +104,12 @@ export default function RootNavigator() {
                 <OnboardingScreen {...props} onComplete={handleOnboardingComplete} />
               )}
               options={{ contentStyle: { backgroundColor: '#0A0A0F' } }}
+            />
+          ) : !permissionsComplete ? (
+            <Stack.Screen
+              name="Permissions"
+              children={() => <PermissionExplainerScreen onComplete={handlePermissionsComplete} />}
+              options={{ animation: 'fade' }}
             />
           ) : (
             <Stack.Screen name="App" component={AppStack} options={{ animation: 'none' }} />

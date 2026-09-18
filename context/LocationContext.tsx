@@ -58,6 +58,7 @@ export const useLocation = () => useContext(LocationContext);
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userLocation, setUserLocation] = useState<Loc | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [permissionVersion, setPermissionVersion] = useState(0);
   const initialSet = useRef(false);
 
   useEffect(() => {
@@ -73,15 +74,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     (async () => {
       const { status: foregroundStatus } = await Location.getForegroundPermissionsAsync();
-      let foregroundGranted = foregroundStatus === 'granted';
-      if (!foregroundGranted) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        foregroundGranted = status === 'granted';
-      }
+      const foregroundGranted = foregroundStatus === 'granted';
 
       if (!foregroundGranted) {
         if (active) setLocationGranted(false);
-        return;
+        const retry = setTimeout(() => setPermissionVersion((version) => version + 1), 1000);
+        return () => clearTimeout(retry);
       }
       if (active) setLocationGranted(true);
 
@@ -107,11 +105,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // low-latency foreground path used to update the UI.
       if (TaskManager.isTaskDefined(LOCATION_TASK_NAME)) {
         const { status: backgroundStatus } = await Location.getBackgroundPermissionsAsync();
-        let backgroundGranted = backgroundStatus === 'granted';
-        if (!backgroundGranted) {
-          const { status } = await Location.requestBackgroundPermissionsAsync();
-          backgroundGranted = status === 'granted';
-        }
+        const backgroundGranted = backgroundStatus === 'granted';
 
         if (backgroundGranted) {
           const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
@@ -144,7 +138,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       active = false;
       subscription?.remove();
     };
-  }, []);
+  }, [permissionVersion]);
 
   return (
     <LocationContext.Provider value={{ userLocation, locationGranted }}>

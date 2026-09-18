@@ -68,6 +68,7 @@ export function useSOSContext(): SOSContextType {
 export function SOSProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId]     = useState<string | null>(null);
   const [userName, setUserName] = useState('Unknown');
+  const [permissionsComplete, setPermissionsComplete] = useState(false);
 
   const [policeLoading, setPoliceLoading]       = useState(false);
   const [policeResult, setPoliceResult]         = useState<PoliceSMSResult | null>(null);
@@ -90,6 +91,12 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
         setUserId(d.phone ?? null);
         setUserName(d.name ?? 'Unknown');
       }
+    });
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem('AbhayaPermissionsExplainerComplete').then((value) => {
+      setPermissionsComplete(value === 'true');
     });
   }, []);
 
@@ -167,7 +174,7 @@ export function SOSProvider({ children }: { children: React.ReactNode }) {
 
   // ── Edge Impulse keyword detection hook ──────────────────────────────────
   const { state: keywordState, handleModelReady, handleResult } =
-    useEdgeImpulseKeywordDetection(true, onKeywordDetected, eiWebViewRef);
+    useEdgeImpulseKeywordDetection(permissionsComplete, onKeywordDetected, eiWebViewRef);
 
   // ── Expose locationRef updater so screens can push fresh GPS ─────────────
   // Screens call: sosContext.updateLocation(lat, lng)  (see below)
