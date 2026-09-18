@@ -131,7 +131,28 @@ npm run android
 npm run ios
 ```
 
-The app points to `https://abhaya-backend.onrender.com` by default (configured in `app.json → extra.apiBaseUrl`). To run the backend locally, go into `backend/` and follow its own setup.
+### Environment setup
+
+The frontend and backend use separate environment files. For the Expo app, copy the root template and fill in the public RevenueCat Test Store keys when testing purchases:
+
+```bash
+cp .env.example .env
+```
+
+For the backend, copy its template and provide the PostgreSQL and Twilio values:
+
+```bash
+cd backend
+cp .env.example .env
+npm install
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
+```
+
+The app points to `https://abhaya-backend.onrender.com` by default (configured in `app.json → extra.apiBaseUrl`). For a local backend on a physical device, set `EXPO_PUBLIC_LAN_API_BASE_URL` in the frontend `.env` to the computer's LAN address, such as `http://192.168.1.25:4000`.
+
+The complete variable lists are maintained separately in [frontend `.env.example`](.env.example) and [backend `.env.example](backend/.env.example). Never commit `.env` files or server credentials.
 
 ### Permissions the app will ask for
 
