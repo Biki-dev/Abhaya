@@ -143,8 +143,8 @@ export default function HomeMapScreen({ navigation }: any) {
           : { text: 'Tracking Active', color: colors.safe };
 
   const kwStatus = keywordState.modelLoaded
-    ? `🎤 Listening${keywordState.projectInfo ? ` · ${keywordState.projectInfo.project}` : ' (EI)'}`
-    : '🎤 Loading model...';
+    ? `Listening${keywordState.projectInfo ? ` · ${keywordState.projectInfo.project}` : ' (EI)'}`
+    : 'Loading model...';
 
   const triggerManualAction = useCallback(() => {
     triggerSOS(discreetMode ? 'Discreet safety action triggered' : '🔴 Manual SOS button pressed');
