@@ -51,6 +51,16 @@ Hosted Node.js API on Render ───── PostgreSQL database
 
 The repository contains the mobile app, backend, database schema and migrations, and the static viewer. The mobile app defaults to the hosted API configured in `app.json`. The backend uses PostgreSQL through Prisma. The viewer uses a short-lived token and Socket.IO for live updates.
 
+## End-to-end safety flow
+
+The existing project flowchart below shows how a safety event moves from the device to the backend, database, emergency delivery, and trusted-contact viewer.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Biki-dev/Abhaya/main/flow.png" alt="Abhaya end-to-end safety flowchart" width="960" />
+</p>
+
+The mobile app remains responsible for user consent, countdown control, and plan-aware UI. The backend stores safety sessions and purchase-history snapshots, while RevenueCat remains the authority for client-side subscription entitlements. The public viewer receives only the temporary session data required to follow the active safety event.
+
 ## Fast path for judges: run the mobile app with the hosted backend
 
 This is the recommended evaluation path. A judge does **not** need to run PostgreSQL, Twilio, or the backend locally.
