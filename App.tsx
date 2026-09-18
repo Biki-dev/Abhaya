@@ -12,6 +12,7 @@ import {
 import RootNavigator from './navigation/RootNavigator';
 import { LocationProvider } from './context/LocationContext';
 import { SOSProvider } from './context/SOSContext';
+import { DiscreetModeProvider } from './context/DiscreetModeContext';
 
 // ── Global Error Boundary ──────────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component<
@@ -85,14 +86,16 @@ function AppInner() {
           and the SOS countdown are always mounted — no matter which screen
           is active or whether the app is in the background.
         */}
-        <SOSProvider>
-          <SafeAreaProvider>
-            <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-              <RootNavigator />
-              <StatusBar style="dark" backgroundColor="#FAFBFC" />
-            </SafeAreaView>
-          </SafeAreaProvider>
-        </SOSProvider>
+        <DiscreetModeProvider>
+          <SOSProvider>
+            <SafeAreaProvider>
+              <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+                <RootNavigator />
+                <StatusBar style="dark" backgroundColor="#FAFBFC" />
+              </SafeAreaView>
+            </SafeAreaProvider>
+          </SOSProvider>
+        </DiscreetModeProvider>
       </LocationProvider>
     </GestureHandlerRootView>
   );

@@ -27,6 +27,7 @@ import {
 } from '../services/emergencyContacts';
 import { useAuth } from '../navigation/RootNavigator';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useDiscreetMode } from '../context/DiscreetModeContext';
 
 type ContactEditState = {
   localId: string | null;   // null = new contact
@@ -37,6 +38,7 @@ type ContactEditState = {
 export default function SettingsScreen({ navigation }: any) {
   const { signOut } = useAuth();
   const { isPremiumActive, plan } = useSubscription();
+  const { enabled: discreetMode, triggerMode, setEnabled, setTriggerMode } = useDiscreetMode();
   // ── local contacts state ───────────────────────────────────────────────────
   const [contacts, setContactsState] = useState<EmergencyContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
@@ -336,6 +338,48 @@ export default function SettingsScreen({ navigation }: any) {
         )}
       </View>
 
+      {/* ── Discreet Mode ── */}
+      <View style={styles.section}>
+        <View style={styles.discreetHeader}>
+          <View style={styles.discreetIcon}>
+            <Ionicons name="eye-off-outline" size={20} color={colors.primaryDark} />
+          </View>
+          <View style={styles.settingInfo}>
+            <Text style={styles.sectionTitle}>Discreet Mode</Text>
+            <Text style={styles.sectionSubtitle}>A low-attention interface for situations where drawing attention may be unsafe.</Text>
+          </View>
+          <Switch
+            value={discreetMode}
+            onValueChange={(value) => void setEnabled(value)}
+            trackColor={{ false: colors.inactive, true: colors.primaryLight }}
+            thumbColor={discreetMode ? colors.primaryDark : '#fff'}
+          />
+        </View>
+        <Text style={styles.discreetNote}>
+          Uses a neutral confirmation screen, haptic countdown feedback, and a neutral notification shade message. Android may still show system indicators or restrict background behavior.
+        </Text>
+        <Text style={styles.triggerLabel}>Trigger gesture</Text>
+        <View style={styles.triggerChoices}>
+          <TouchableOpacity
+            style={[styles.triggerChoice, triggerMode === 'hold' && styles.triggerChoiceActive]}
+            onPress={() => void setTriggerMode('hold')}
+          >
+            <Ionicons name="hand-left-outline" size={18} color={triggerMode === 'hold' ? colors.primaryDark : colors.muted} />
+            <Text style={[styles.triggerChoiceText, triggerMode === 'hold' && styles.triggerChoiceTextActive]}>Press and hold</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.triggerChoice, triggerMode === 'tripleTap' && styles.triggerChoiceActive]}
+            onPress={() => void setTriggerMode('tripleTap')}
+          >
+            <Ionicons name="finger-print-outline" size={18} color={triggerMode === 'tripleTap' ? colors.primaryDark : colors.muted} />
+            <Text style={[styles.triggerChoiceText, triggerMode === 'tripleTap' && styles.triggerChoiceTextActive]}>Triple tap</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.triggerHint}>
+          {triggerMode === 'hold' ? 'Hold the Safety button for a moment to start the check.' : 'Tap the Safety button three times quickly to start the check.'}
+        </Text>
+      </View>
+
       {/* ── Account ── */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
@@ -408,6 +452,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle:    { ...typography.subheading, color: colors.text },
   sectionSubtitle: { ...typography.caption, color: colors.muted, marginTop: 2, maxWidth: 200 },
+  discreetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  discreetIcon: { width: 40, height: 40, borderRadius: borderRadius.md, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center' },
+  discreetNote: { ...typography.caption, color: colors.muted, lineHeight: 17, marginBottom: spacing.lg },
+  triggerLabel: { ...typography.caption, color: colors.text, fontFamily: 'Manrope_600SemiBold', marginBottom: spacing.sm },
+  triggerChoices: { flexDirection: 'row', gap: spacing.sm },
+  triggerChoice: { flex: 1, minHeight: 58, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, padding: spacing.sm, justifyContent: 'center', alignItems: 'center', gap: 4, backgroundColor: colors.surface },
+  triggerChoiceActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  triggerChoiceText: { ...typography.caption, color: colors.muted, textAlign: 'center' },
+  triggerChoiceTextActive: { color: colors.primaryDark, fontFamily: 'Manrope_700Bold' },
+  triggerHint: { ...typography.caption, color: colors.muted, marginTop: spacing.sm },
   sectionActions:  { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 
   syncBtn: {

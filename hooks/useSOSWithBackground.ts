@@ -12,7 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Vibration } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import {
@@ -27,6 +27,7 @@ import {
 import { logSensorEvent } from '../services/sensorDb';
 import { sendPoliceSOS, PoliceSMSResult } from '../services/policeSOS';
 import { clearPendingBackgroundSOS, savePendingBackgroundSOS } from '../services/backgroundSOS';
+import { useDiscreetMode } from '../context/DiscreetModeContext';
 
 const COUNTDOWN_SECS = 5;
 
@@ -49,6 +50,7 @@ type SOSHookOptions = {
 };
 
 export function useSOSWithBackground(opts: SOSHookOptions) {
+  const { enabled: discreetMode } = useDiscreetMode();
   const [sosState, setSOSState] = useState<SOSCountdownState>({
     visible: false, countdown: COUNTDOWN_SECS, reason: '',
   });
@@ -110,7 +112,7 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
 
       if (!isFgRef.current && wasFg) {
         // App went to background mid-countdown → show sticky notification
-        showSOSCountdownNotification(reasonRef.current, countdownRef.current);
+        showSOSCountdownNotification(reasonRef.current, countdownRef.current, discreetMode);
       }
       if (isFgRef.current && !wasFg) {
         // App came back to foreground → dismiss notification (modal is visible)
@@ -119,7 +121,7 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
     };
     const sub = AppState.addEventListener('change', handler);
     return () => sub.remove();
-  }, []);
+  }, [discreetMode]);
 
   // ── Internal fire function ────────────────────────────────────────────────
   const fireSOS = useCallback(async (
@@ -199,7 +201,7 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
 
     // If app is already in background (edge case), show notification immediately
     if (!isFgRef.current) {
-      showSOSCountdownNotification(reason, COUNTDOWN_SECS);
+      showSOSCountdownNotification(reason, COUNTDOWN_SECS, discreetMode);
     }
 
     let cnt = COUNTDOWN_SECS;
@@ -210,9 +212,11 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
       countdownRef.current = cnt;
       setSOSState(s => ({ ...s, countdown: cnt }));
 
+      if (discreetMode) Vibration.vibrate(80);
+
       // Keep notification updated while in background
       if (!isFgRef.current && activeRef.current) {
-        showSOSCountdownNotification(reasonRef.current, cnt);
+        showSOSCountdownNotification(reasonRef.current, cnt, discreetMode);
       }
 
       if (cnt <= 0) {
@@ -231,7 +235,7 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
         setTimeout(() => { firedRef.current = false; }, 6000);
       }
     }, 1000);
-  }, [fireSOS]);
+  }, [discreetMode, fireSOS]);
 
   // ── PUBLIC: cancel SOS ────────────────────────────────────────────────────
   const cancelSOS = useCallback(() => {

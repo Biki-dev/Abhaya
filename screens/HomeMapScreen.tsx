@@ -16,6 +16,7 @@ import { logSensorEvent } from '../services/sensorDb';
 import PoliceAlertBanner from '../components/PoliceAlertBanner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildLeafletHTML } from '../utils/buildLeafletHTML';
+import { useDiscreetMode } from '../context/DiscreetModeContext';
 
 const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { showPulse: true, zoom: 16 });
 
@@ -36,6 +37,7 @@ export default function HomeMapScreen({ navigation }: any) {
     trustedContactSession,
     resolveTrustedContactSession,
   } = useSOSContextFull();
+  const { enabled: discreetMode, triggerMode } = useDiscreetMode();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Unknown');
@@ -46,6 +48,7 @@ export default function HomeMapScreen({ navigation }: any) {
   const mapWebViewRef = useRef<WebView>(null);
   const prevMotion = useRef({ isFalling: false, impactDetected: false, isShaking: false, shakeCount: 0 });
   const pPeak = useRef(false);
+  const discreetTapTimes = useRef<number[]>([]);
 
   const sensors = useSensorFusion(true);
 
@@ -139,6 +142,21 @@ export default function HomeMapScreen({ navigation }: any) {
   const kwStatus = keywordState.modelLoaded
     ? `🎤 Listening${keywordState.projectInfo ? ` · ${keywordState.projectInfo.project}` : ' (EI)'}`
     : '🎤 Loading model...';
+
+  const triggerManualAction = useCallback(() => {
+    triggerSOS(discreetMode ? 'Discreet safety action triggered' : '🔴 Manual SOS button pressed');
+  }, [discreetMode, triggerSOS]);
+
+  const handleDiscreetButtonPress = useCallback(() => {
+    if (!discreetMode) return triggerManualAction();
+    if (triggerMode !== 'tripleTap') return;
+    const now = Date.now();
+    discreetTapTimes.current = [...discreetTapTimes.current.filter((time) => now - time < 850), now];
+    if (discreetTapTimes.current.length >= 3) {
+      discreetTapTimes.current = [];
+      triggerManualAction();
+    }
+  }, [discreetMode, triggerMode, triggerManualAction]);
 
   return (
     <View style={s.container}>
@@ -275,9 +293,15 @@ export default function HomeMapScreen({ navigation }: any) {
             <MaterialCommunityIcons name="map-marker-path" size={20} color="#fff" />
             <Text style={s.primaryBtnText}>Check-In</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.sosBtn} onPress={() => triggerSOS('🔴 Manual SOS button pressed')}>
-            <MaterialCommunityIcons name="alarm-light" size={20} color="#fff" />
-            <Text style={s.sosBtnText}>SOS</Text>
+          <TouchableOpacity
+            style={[s.sosBtn, discreetMode && s.discreetActionBtn]}
+            onPress={handleDiscreetButtonPress}
+            onLongPress={discreetMode && triggerMode === 'hold' ? triggerManualAction : undefined}
+            delayLongPress={650}
+            accessibilityLabel={discreetMode ? 'Safety action' : 'SOS'}
+          >
+            <MaterialCommunityIcons name={discreetMode ? 'shield-check-outline' : 'alarm-light'} size={20} color="#fff" />
+            <Text style={s.sosBtnText}>{discreetMode ? 'Safety' : 'SOS'}</Text>
           </TouchableOpacity>
         </View>
         <Text style={s.hint}>
@@ -310,13 +334,13 @@ export default function HomeMapScreen({ navigation }: any) {
       {/* ── SOS countdown modal — shown on HomeMap when app is in foreground here ── */}
       <Modal transparent visible={sosState.visible} animationType="fade">
         <View style={s.modalBg}>
-          <View style={s.modalCard}>
-            <MaterialCommunityIcons name="alarm-light" size={36} color={colors.danger} />
-            <Text style={s.modalTitle}>SOS Alert in {sosState.countdown}s</Text>
-            <Text style={s.modalReason}>{sosState.reason}</Text>
-            <Text style={s.modalSub}>Police & emergency contacts will be alerted automatically</Text>
-            <View style={s.countdownRing}>
-              <Text style={s.countdownNum}>{sosState.countdown}</Text>
+          <View style={[s.modalCard, discreetMode && s.discreetModalCard]}>
+            <MaterialCommunityIcons name={discreetMode ? 'shield-check-outline' : 'alarm-light'} size={36} color={discreetMode ? colors.primaryDark : colors.danger} />
+            <Text style={[s.modalTitle, discreetMode && s.discreetModalTitle]}>{discreetMode ? 'Safety check in progress' : `SOS Alert in ${sosState.countdown}s`}</Text>
+            <Text style={s.modalReason}>{discreetMode ? 'Your safety action is being prepared.' : sosState.reason}</Text>
+            <Text style={s.modalSub}>{discreetMode ? 'Brief haptic pulses mark the countdown.' : 'Police & emergency contacts will be alerted automatically'}</Text>
+            <View style={[s.countdownRing, discreetMode && s.discreetCountdownRing]}>
+              <Text style={[s.countdownNum, discreetMode && s.discreetCountdownNum]}>{sosState.countdown}</Text>
             </View>
             <TouchableOpacity style={s.cancelBtn} onPress={cancelSOS}>
               <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -390,6 +414,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, height: 50, minWidth: 80, borderRadius: borderRadius.md, backgroundColor: colors.danger,
   },
+  discreetActionBtn: { backgroundColor: colors.primaryDark },
   sosBtnText: { ...typography.body, color: '#fff', fontFamily: 'Manrope_700Bold' },
   hint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   legendRow: { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -404,6 +429,7 @@ const s = StyleSheet.create({
     alignItems: 'center', width: '100%', borderWidth: 2, borderColor: colors.danger,
     shadowColor: '#EF4444', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 12,
   },
+  discreetModalCard: { borderColor: colors.border, shadowColor: colors.primaryDark, shadowOpacity: 0.12 },
   modalTitle: { ...typography.title, color: colors.danger, marginTop: spacing.md, textAlign: 'center' },
   modalReason: { ...typography.body, color: colors.text, marginTop: spacing.sm, textAlign: 'center' },
   modalSub: { ...typography.caption, color: colors.muted, marginTop: spacing.sm, textAlign: 'center' },
@@ -419,4 +445,7 @@ const s = StyleSheet.create({
   },
   cancelBtnText: { color: '#fff', fontFamily: 'Manrope_700Bold', fontSize: 16 },
   modalHint: { ...typography.caption, color: colors.muted, marginTop: spacing.lg, textAlign: 'center' },
+  discreetModalTitle: { color: colors.primaryDark },
+  discreetCountdownRing: { borderColor: colors.primaryDark, backgroundColor: colors.primaryLight },
+  discreetCountdownNum: { color: colors.primaryDark },
 });

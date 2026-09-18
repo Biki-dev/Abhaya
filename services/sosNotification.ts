@@ -23,7 +23,12 @@ Notifications.setNotificationHandler({
     if (type === 'checkin_expired' || type === 'sos_fired') {
       return { shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false };
     }
-    // sos_countdown: we show our modal, so suppress the OS banner in foreground
+    // Discreet mode intentionally keeps a neutral notification in the shade,
+    // even while the app is foregrounded. It uses vibration only, not sound.
+    if (type === 'sos_countdown' && notification.request.content.data?.discreetMode === true) {
+      return { shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false };
+    }
+    // Normal mode uses our own modal while foregrounded.
     return { shouldShowBanner: false, shouldShowList: false, shouldPlaySound: true, shouldSetBadge: false };
   },
 });
@@ -88,6 +93,7 @@ export async function setupSOSNotificationCategories(): Promise<void> {
 export async function showSOSCountdownNotification(
   reason: string,
   secondsLeft: number,
+  discreetMode = false,
 ): Promise<void> {
   // Dismiss any previous one first
   try { await Notifications.dismissNotificationAsync(SOS_COUNTDOWN_NOTIF_ID); } catch {}
@@ -96,17 +102,19 @@ export async function showSOSCountdownNotification(
     await Notifications.scheduleNotificationAsync({
       identifier: SOS_COUNTDOWN_NOTIF_ID,
       content: {
-        title: `🚨 SOS Alert in ${secondsLeft}s`,
-        body: `${reason}\n\nPress "I'm Safe" to cancel — police & contacts will be alerted automatically.`,
+        title: discreetMode ? `Safety check in ${secondsLeft}s` : `🚨 SOS Alert in ${secondsLeft}s`,
+        body: discreetMode
+          ? 'Safety check active. Tap “I’m Safe” to cancel.'
+          : `${reason}\n\nPress "I'm Safe" to cancel — police & contacts will be alerted automatically.`,
         categoryIdentifier: SOS_CATEGORY_ID,
-        color: '#EF4444',
-        sound: true,
-        vibrate: [0, 400, 200, 400],
+        color: discreetMode ? '#64748B' : '#EF4444',
+        sound: !discreetMode,
+        vibrate: discreetMode ? [0, 80] : [0, 400, 200, 400],
         // Android-specific sticky notification (user must act)
         ...(Platform.OS === 'android'
           ? { autoDismiss: false, sticky: true, priority: 'max' }
           : {}),
-        data: { type: 'sos_countdown', reason, secondsLeft },
+        data: { type: 'sos_countdown', reason, secondsLeft, discreetMode },
       },
       trigger: null, // fire immediately
     });
