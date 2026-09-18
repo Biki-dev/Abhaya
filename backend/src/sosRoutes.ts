@@ -20,6 +20,8 @@ type PoliceStation = {
 type ContactSMSResult = {
   name: string;
   phone: string;
+  role: string;
+  responseStatus: 'notified' | 'not_reached';
   sent: boolean;
   twilioSid: string | null;
   error: string | null;
@@ -95,6 +97,8 @@ sosRouter.post('/api/sos/alert', async (req, res) => {
           return {
             name: contact.name,
             phone: contact.phone,
+            role: contact.role,
+            responseStatus: 'notified',
             sent: true,
             twilioSid: sid,
             error: null,
@@ -103,6 +107,8 @@ sosRouter.post('/api/sos/alert', async (req, res) => {
           return {
             name: contact.name,
             phone: contact.phone,
+            role: contact.role,
+            responseStatus: 'not_reached',
             sent: false,
             twilioSid: null,
             error: error instanceof Error ? error.message : String(error),
@@ -118,6 +124,8 @@ sosRouter.post('/api/sos/alert', async (req, res) => {
         contactResults.push({
           name: 'Unknown',
           phone: '',
+          role: 'family_member',
+          responseStatus: 'not_reached',
           sent: false,
           twilioSid: null,
           error: result.reason instanceof Error ? result.reason.message : String(result.reason),

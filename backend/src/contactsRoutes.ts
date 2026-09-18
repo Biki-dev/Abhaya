@@ -8,6 +8,7 @@ export const contactsRouter = Router();
 const contactSchema = z.object({
   name:  z.string().min(1).max(100),
   phone: z.string().min(7).max(20),
+  role:  z.enum(['primary_responder', 'family_member', 'friend', 'nearby_helper', 'medical_contact']).default('family_member'),
 });
 
 const bulkSyncSchema = z.object({
@@ -27,7 +28,7 @@ contactsRouter.get('/api/contacts/:phone', async (req, res) => {
   const contacts = await prisma.emergencyContact.findMany({
     where:   { userId: user.id },
     orderBy: { createdAt: 'asc' },
-    select:  { id: true, name: true, phone: true, createdAt: true, updatedAt: true },
+    select:  { id: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
 
   return res.json(contacts);
@@ -49,8 +50,8 @@ contactsRouter.post('/api/contacts/:phone/sync', async (req, res) => {
     const created = await Promise.all(
       parsed.data.contacts.map((c) =>
         tx.emergencyContact.create({
-          data:   { userId: user.id, name: c.name, phone: c.phone },
-          select: { id: true, name: true, phone: true, createdAt: true, updatedAt: true },
+          data:   { userId: user.id, name: c.name, phone: c.phone, role: c.role },
+          select: { id: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
         })
       )
     );
@@ -69,8 +70,8 @@ contactsRouter.post('/api/contacts/:phone', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   const contact = await prisma.emergencyContact.create({
-    data:   { userId: user.id, name: parsed.data.name, phone: parsed.data.phone },
-    select: { id: true, name: true, phone: true, createdAt: true, updatedAt: true },
+    data:   { userId: user.id, name: parsed.data.name, phone: parsed.data.phone, role: parsed.data.role },
+    select: { id: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
 
   return res.status(201).json(contact);
@@ -113,8 +114,8 @@ contactsRouter.patch('/api/contacts/:phone/:contactId', async (req, res) => {
 
   const updated = await prisma.emergencyContact.update({
     where:  { id: contactId },
-    data:   { name: parsed.data.name, phone: parsed.data.phone },
-    select: { id: true, name: true, phone: true, createdAt: true, updatedAt: true },
+    data:   { name: parsed.data.name, phone: parsed.data.phone, role: parsed.data.role },
+    select: { id: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
 
   return res.json(updated);

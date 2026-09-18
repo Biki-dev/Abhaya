@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import type { PoliceSMSResult } from '../services/policeSOS';
+import { EMERGENCY_CONTACT_ROLES } from '../services/emergencyContacts';
 
 type Props = {
   result:    PoliceSMSResult | null;
@@ -48,6 +49,13 @@ export default function PoliceAlertBanner({ result, loading, onDismiss }: Props)
     : null;
 
   const contactsSent = contacts.filter((c) => c.sent).length;
+  const roleLabel = (role?: string) => EMERGENCY_CONTACT_ROLES.find((item) => item.value === role)?.label ?? 'Emergency contact';
+  const responseLabel = (contact: typeof contacts[number]) =>
+    contact.responseStatus === 'viewer_opened' ? 'viewer opened' : contact.responseStatus === 'not_reached' || !contact.sent ? 'not reached' : 'notified';
+  const responseIcon = (contact: typeof contacts[number]) =>
+    responseLabel(contact) === 'viewer opened' ? 'eye' : responseLabel(contact) === 'notified' ? 'checkmark-circle' : 'close-circle';
+  const responseColor = (contact: typeof contacts[number]) =>
+    responseLabel(contact) === 'not reached' ? '#EF4444' : responseLabel(contact) === 'viewer opened' ? '#7C3AED' : '#10B981';
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -125,19 +133,22 @@ export default function PoliceAlertBanner({ result, loading, onDismiss }: Props)
               color={contactsSent > 0 ? '#10B981' : '#EF4444'}
             />
             <Text style={styles.contactsTitle}>
-              Emergency contacts alerted: {contactsSent}/{contacts.length}
+              Response map · {contactsSent}/{contacts.length} notified
             </Text>
           </View>
 
           {contacts.map((c, i) => (
             <View key={i} style={styles.contactRow}>
               <Ionicons
-                name={c.sent ? 'checkmark-circle' : 'close-circle'}
+                name={responseIcon(c) as any}
                 size={14}
-                color={c.sent ? '#10B981' : '#EF4444'}
+                color={responseColor(c)}
               />
-              <Text style={styles.contactName}>{c.name}</Text>
-              <Text style={styles.contactPhone}>{c.phone}</Text>
+              <View style={styles.contactIdentity}>
+                <Text style={styles.contactName}>{roleLabel(c.role)}</Text>
+                <Text style={styles.contactPerson}>{c.name}</Text>
+              </View>
+              <Text style={[styles.contactStatus, { color: responseColor(c) }]}>{responseLabel(c)}</Text>
               {!c.sent && c.error && (
                 <Text style={styles.contactErr} numberOfLines={1}>
                   {c.error.length > 40 ? c.error.substring(0, 40) + '…' : c.error}
@@ -270,6 +281,9 @@ const styles = StyleSheet.create({
     color:      '#374151',
     minWidth:   70,
   },
+  contactIdentity: { flex: 1 },
+  contactPerson: { fontSize: 10, fontFamily: 'Manrope_500Medium', color: '#9CA3AF', marginTop: 1 },
+  contactStatus: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', textTransform: 'capitalize' },
   contactPhone: {
     fontSize:   11,
     fontFamily: 'Manrope_500Medium',

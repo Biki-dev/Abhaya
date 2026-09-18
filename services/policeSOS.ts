@@ -13,6 +13,8 @@ export type PoliceStation = {
 export type ContactSMSResult = {
   name: string;
   phone: string;
+  role?: string;
+  responseStatus?: 'notified' | 'viewer_opened' | 'not_reached';
   sent: boolean;
   twilioSid: string | null;
   error: string | null;

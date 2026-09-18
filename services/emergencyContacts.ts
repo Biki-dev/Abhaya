@@ -23,7 +23,31 @@ export type EmergencyContact = {
   backendId: number | null;
   name:  string;
   phone: string;
+  role: EmergencyContactRole;
 };
+
+export type EmergencyContactRole =
+  | 'primary_responder'
+  | 'family_member'
+  | 'friend'
+  | 'nearby_helper'
+  | 'medical_contact';
+
+export const EMERGENCY_CONTACT_ROLES: Array<{ value: EmergencyContactRole; label: string }> = [
+  { value: 'primary_responder', label: 'Primary responder' },
+  { value: 'family_member', label: 'Family member' },
+  { value: 'friend', label: 'Friend' },
+  { value: 'nearby_helper', label: 'Nearby helper' },
+  { value: 'medical_contact', label: 'Medical contact' },
+];
+
+export const DEFAULT_CONTACT_ROLE: EmergencyContactRole = 'family_member';
+
+function normalizeRole(role: unknown): EmergencyContactRole {
+  return EMERGENCY_CONTACT_ROLES.some((item) => item.value === role)
+    ? role as EmergencyContactRole
+    : DEFAULT_CONTACT_ROLE;
+}
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const CONTACTS_KEY = 'Abhaya_emergency_contacts';   // local list
@@ -36,7 +60,8 @@ function uuid(): string {
 async function readLocal(): Promise<EmergencyContact[]> {
   try {
     const raw = await AsyncStorage.getItem(CONTACTS_KEY);
-    return raw ? (JSON.parse(raw) as EmergencyContact[]) : [];
+    const contacts = raw ? (JSON.parse(raw) as Partial<EmergencyContact>[]) : [];
+    return contacts.map((contact) => ({ ...contact, role: normalizeRole(contact.role) })) as EmergencyContact[];
   } catch {
     return [];
   }
@@ -117,7 +142,7 @@ export async function initContactsFromBackend(): Promise<EmergencyContact[]> {
     });
     if (!res.ok) return readLocal();
 
-    type BackendContact = { id: number; name: string; phone: string };
+    type BackendContact = { id: number; name: string; phone: string; role?: string };
     const remote: BackendContact[] = await res.json();
 
     // Map backend contacts → local shape; preserve any unsynced local contacts
@@ -131,6 +156,7 @@ export async function initContactsFromBackend(): Promise<EmergencyContact[]> {
         backendId: c.id,
         name:      c.name,
         phone:     c.phone,
+        role:      normalizeRole(c.role),
       };
     });
 
@@ -159,12 +185,14 @@ export async function initContactsFromBackend(): Promise<EmergencyContact[]> {
 export async function addContact(
   name: string,
   phone: string,
+  role: EmergencyContactRole = DEFAULT_CONTACT_ROLE,
 ): Promise<EmergencyContact> {
   const contact: EmergencyContact = {
     localId:   uuid(),
     backendId: null,
     name:      name.trim(),
     phone:     phone.trim(),
+    role:      normalizeRole(role),
   };
 
   const list = await readLocal();
@@ -184,12 +212,13 @@ export async function updateContact(
   localId: string,
   name: string,
   phone: string,
+  role: EmergencyContactRole = DEFAULT_CONTACT_ROLE,
 ): Promise<EmergencyContact | null> {
   const list = await readLocal();
   const idx  = list.findIndex((c) => c.localId === localId);
   if (idx === -1) return null;
 
-  list[idx] = { ...list[idx], name: name.trim(), phone: phone.trim() };
+  list[idx] = { ...list[idx], name: name.trim(), phone: phone.trim(), role: normalizeRole(role) };
   await writeLocal(list);
 
   // Background sync
@@ -220,13 +249,14 @@ export async function deleteContact(localId: string): Promise<void> {
  * Used during onboarding to seed contacts entered in sign-up flow.
  */
 export async function setContacts(
-  contacts: { name: string; phone: string }[],
+  contacts: { name: string; phone: string; role?: EmergencyContactRole }[],
 ): Promise<EmergencyContact[]> {
   const mapped: EmergencyContact[] = contacts.map((c) => ({
     localId:   uuid(),
     backendId: null,
     name:      c.name.trim(),
     phone:     c.phone.trim(),
+    role:      normalizeRole(c.role),
   }));
   await writeLocal(mapped);
   backgroundSync(mapped).catch(() => {});
@@ -244,7 +274,7 @@ async function syncToBackend(
   base: string,
 ): Promise<void> {
   const body = JSON.stringify({
-    contacts: contacts.map((c) => ({ name: c.name, phone: c.phone })),
+    contacts: contacts.map((c) => ({ name: c.name, phone: c.phone, role: c.role })),
   });
 
   const res = await fetch(`${base}/api/contacts/${phone}/sync`, {
@@ -258,7 +288,7 @@ async function syncToBackend(
     return;
   }
 
-  type BackendContact = { id: number; name: string; phone: string };
+  type BackendContact = { id: number; name: string; phone: string; role?: string };
   const { contacts: synced }: { contacts: BackendContact[] } = await res.json();
 
   // Update backendIds in local store

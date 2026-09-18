@@ -24,6 +24,9 @@ import {
   deleteContact,
   initContactsFromBackend,
   type EmergencyContact,
+  type EmergencyContactRole,
+  EMERGENCY_CONTACT_ROLES,
+  DEFAULT_CONTACT_ROLE,
 } from '../services/emergencyContacts';
 import { useAuth } from '../navigation/RootNavigator';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -33,6 +36,7 @@ type ContactEditState = {
   localId: string | null;   // null = new contact
   name:    string;
   phone:   string;
+  role: EmergencyContactRole;
 };
 
 export default function SettingsScreen({ navigation }: any) {
@@ -46,7 +50,7 @@ export default function SettingsScreen({ navigation }: any) {
 
   // ── edit modal state ───────────────────────────────────────────────────────
   const [editMode, setEditMode]       = useState(false);
-  const [editState, setEditState]     = useState<ContactEditState>({ localId: null, name: '', phone: '' });
+  const [editState, setEditState]     = useState<ContactEditState>({ localId: null, name: '', phone: '', role: DEFAULT_CONTACT_ROLE });
   const [editErrors, setEditErrors]   = useState<{ name?: string; phone?: string }>({});
 
   // ── safety toggles ────────────────────────────────────────────────────────
@@ -86,13 +90,13 @@ export default function SettingsScreen({ navigation }: any) {
       ]);
       return;
     }
-    setEditState({ localId: null, name: '', phone: '' });
+    setEditState({ localId: null, name: '', phone: '', role: DEFAULT_CONTACT_ROLE });
     setEditErrors({});
     setEditMode(true);
   };
 
   const openEditForm = (contact: EmergencyContact) => {
-    setEditState({ localId: contact.localId, name: contact.name, phone: contact.phone });
+    setEditState({ localId: contact.localId, name: contact.name, phone: contact.phone, role: contact.role });
     setEditErrors({});
     setEditMode(true);
   };
@@ -115,11 +119,11 @@ export default function SettingsScreen({ navigation }: any) {
     try {
       if (editState.localId === null) {
         // New contact
-        const created = await addContact(editState.name, editState.phone);
+        const created = await addContact(editState.name, editState.phone, editState.role);
         setContactsState((prev) => [...prev, created]);
       } else {
         // Update existing
-        const updated = await updateContact(editState.localId, editState.name, editState.phone);
+        const updated = await updateContact(editState.localId, editState.name, editState.phone, editState.role);
         if (updated) {
           setContactsState((prev) =>
             prev.map((c) => (c.localId === updated.localId ? updated : c))
@@ -220,6 +224,21 @@ export default function SettingsScreen({ navigation }: any) {
             </Text>
 
             <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Role</Text>
+              <View style={styles.roleChoices}>
+                {EMERGENCY_CONTACT_ROLES.map((role) => (
+                  <TouchableOpacity
+                    key={role.value}
+                    style={[styles.roleChoice, editState.role === role.value && styles.roleChoiceActive]}
+                    onPress={() => setEditState((s) => ({ ...s, role: role.value }))}
+                  >
+                    <Text style={[styles.roleChoiceText, editState.role === role.value && styles.roleChoiceTextActive]}>{role.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.fieldWrap}>
               <Text style={styles.fieldLabel}>Name</Text>
               <TextInput
                 style={[styles.fieldInput, editErrors.name ? styles.fieldInputError : null]}
@@ -309,6 +328,7 @@ export default function SettingsScreen({ navigation }: any) {
                   )}
                 </View>
                 <Text style={styles.contactPhone}>{contact.phone}</Text>
+                <Text style={styles.contactRole}>{EMERGENCY_CONTACT_ROLES.find((role) => role.value === contact.role)?.label ?? 'Family member'}</Text>
               </View>
 
               {/* Actions */}
@@ -490,6 +510,11 @@ const styles = StyleSheet.create({
   },
   fieldInputError:  { borderColor: colors.danger },
   fieldError:       { ...typography.caption, color: colors.danger, marginTop: 3 },
+  roleChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  roleChoice: { borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.surface },
+  roleChoiceActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  roleChoiceText: { ...typography.caption, color: colors.muted },
+  roleChoiceTextActive: { color: colors.primaryDark, fontFamily: 'Manrope_700Bold' },
   editFormBtns:     { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   cancelFormBtn: {
     flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.md,
@@ -536,6 +561,7 @@ const styles = StyleSheet.create({
   contactNameRow: { flexDirection: 'row', alignItems: 'center' },
   contactName:    { ...typography.body, color: colors.text, fontFamily: 'Manrope_600SemiBold' },
   contactPhone:   { ...typography.caption, color: colors.muted, marginTop: 2 },
+  contactRole: { ...typography.caption, color: colors.primaryDark, marginTop: 3, fontFamily: 'Manrope_600SemiBold' },
   contactActionBtn: {
     width: 36, height: 36, borderRadius: 10, backgroundColor: colors.bg,
     borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center',
