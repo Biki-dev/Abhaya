@@ -371,7 +371,7 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
           <View style={styles.settingInfo}>
             <Text style={styles.sectionTitle}>Discreet Mode</Text>
-            <Text style={styles.sectionSubtitle}>A low-attention interface for situations where drawing attention may be unsafe.</Text>
+            <Text style={styles.sectionSubtitle}>A low-attention interface.</Text>
           </View>
           <Switch
             value={discreetModeAvailable && discreetMode}
