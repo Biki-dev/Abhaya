@@ -354,7 +354,7 @@ export default function SettingsScreen({ navigation }: any) {
           <Text style={styles.syncHint}>
             {syncing
               ? 'Syncing with server…'
-              : '☁️  Changes sync automatically when online'}
+              : 'Changes sync automatically when online'}
           </Text>
         )}
       </View>
