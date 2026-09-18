@@ -194,8 +194,7 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={styles.sectionHeaderRow}>
           <View>
             <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-            <Text style={styles.sectionSubtitle}>
-              SOS alerts are sent to all contacts below · {isPremiumActive ? 'Unlimited on your plan' : 'Free plan: 3 contacts'}
+            <Text style={styles.sectionSubtitle}>{isPremiumActive ? 'Unlimited on your plan' : 'Free plan: 3 contacts'}
             </Text>
           </View>
           <View style={styles.sectionActions}>
