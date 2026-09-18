@@ -1,241 +1,254 @@
 <div align="center">
 
-<!-- LOGO -->
-<img src="https://raw.githubusercontent.com/Biki-dev/Abhaya/main/assets/icon.png" width="100" height="100" alt="Abhaya Logo" />
+<img src="https://raw.githubusercontent.com/Biki-dev/Abhaya/main/assets/icon.png" width="96" height="96" alt="Abhaya logo" />
 
-<h1>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="200" height="40" style="vertical-align:middle">
-    <text x="0" y="32" font-size="36" font-family="Georgia, serif" font-weight="bold" fill="#7C3AED">Abhaya</text>
-  </svg>
-</h1>
+# Abhaya
 
-**अभया** — *fearless.*
+**A real-time personal safety companion for Android and iOS.**
 
-A personal safety app for Android & iOS. One tap (or one word) and your people know where you are.
-
-<br/>
+One tap, one word, or one detected safety event can start an SOS flow with a cancel window, current location, emergency alert delivery, and a shareable live safety session.
 
 [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-7C3AED?style=flat-square)](https://github.com/Biki-dev/Abhaya)
-[![Built with Expo](https://img.shields.io/badge/built%20with-Expo%20~54-000020?style=flat-square&logo=expo)](https://expo.dev)
+[![Expo](https://img.shields.io/badge/Expo-54-000020?style=flat-square&logo=expo)](https://expo.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Backend](https://img.shields.io/badge/backend-Render-46E3B7?style=flat-square)](https://abhaya-backend.onrender.com)
-[![Socket.IO](https://img.shields.io/badge/realtime-Socket.IO-010101?style=flat-square&logo=socket.io)](https://socket.io)
 
 </div>
 
----
+## Product overview
 
-## What is this?
+Abhaya is designed for the moment when opening an app is already too difficult. The user can start an SOS from the home screen, trigger the flow through the configured voice keyword, or use safety tracking and route check-in. A short countdown reduces false alarms. The app then sends the alert through the hosted backend and keeps the latest location available to the live safety viewer.
 
-Abhaya is a real-time safety companion app. When something feels wrong, you shouldn't have to unlock your phone, navigate to an app, and press buttons. Abhaya listens — for a keyword, a shake, or a tap — and immediately alerts your trusted contacts with your live GPS location, a countdown to cancel if it's a false alarm, and a two-way socket connection so the backend knows you're in trouble.
+The viewer is a secure, temporary web page. A trusted contact can open it without installing the app and see the session status, latest location, timestamp, accuracy, expiry, and acknowledgement control. It does not expose the user's phone number or subscription data.
 
-The name comes from the Sanskrit Word **abhaya** (अभया) — the meaning of protection and fearlessness. That's the intent.
+## Key features
 
----
-
-## Features
-
-| Feature | How it works |
+| Capability | What the judge can test |
 |---|---|
-| One-tap SOS | Big red button on the home screen. Starts a 10-second countdown — slide to cancel. After that, alerts go out. |
-| Voice keyword detection | Microphone runs in background via `expo-task-manager`. Detected keyword → SOS flow begins. |
-| Live location | `expo-location` in always-on mode. Coordinates stream to the backend over Socket.IO in real time. |
-| Push notifications | Emergency contacts receive a push (`expo-notifications`) with your location and a live-tracking link. |
-| Map view | In-app map (`react-native-maps`) shows your current location and any contacts tracking you. |
-| Emergency audio | `react-native-audio-record` captures ambient audio on SOS trigger — stored for context. |
-| Web viewer | Contacts open a web link (rendered via `react-native-webview` + `web-viewer/`) to see your live position. |
-| Trusted-contact live session | SOS and SafeWalk links use a cryptographically random, expiring token. Contacts can view live location, timestamp, accuracy, status, and acknowledge the alert without installing Abhaya. |
+| SOS countdown | Start an SOS from the home screen and cancel it during the countdown. |
+| Emergency alert flow | Let the countdown finish and inspect the result banner and server response. SMS delivery requires configured Twilio credentials. |
+| Live location | View the current location on the map and start a temporary safety session. |
+| Trusted-contact viewer | Open the generated link in a browser, watch location updates, and acknowledge the session. |
+| Voice keyword flow | Use the configured keyword in a native development build with microphone permission. |
+| Background location | On Android, grant background location and test the foreground location service with the screen off. |
+| Route check-in | Start a route check-in, review the timer, and complete or cancel it. |
+| Sensor safety dashboard | Review motion, GPS, and microphone state. Enhanced features are plan-gated. |
+| RevenueCat Test Store | Review Free, Plus, and Family plan access in a native development build. |
 
----
+## Architecture
 
-## System Architecture
-
-<p align="center" style="background:black; padding:16px;">
-  <img
-    src="https://raw.githubusercontent.com/Biki-dev/Abhaya/main/flow.png"
-    alt="Abhaya architecture"
-    width="900"
-  />
-</p>
-
-### How the layers talk to each other
-
-**LocationContext** and **SOSContext** are mounted at the root level (above the navigator) so they stay alive regardless of which screen is active, including when the app is backgrounded. `expo-task-manager` keeps the location task running even when the process is in the background.
-
-When an SOS fires, `SOSContext` does three things in parallel:
-1. Posts to `/sos` on the REST API (persists the event).
-2. Emits `sos:trigger` over the Socket.IO room — the backend broadcasts to all connected contacts.
-3. Sends a push notification via `expo-notifications` to contacts who aren't online.
-
-The **web-viewer** is a lightweight HTML page (no framework) that opens a token-authorized Socket.IO room, renders a map with the user's coordinates as they stream in, and lets a trusted contact acknowledge the active session.
-
-### Background safety behavior
-
-Abhaya defines a top-level Expo background-location task. After the user grants foreground and background location permission, Android runs the location foreground service and stores the latest coordinates even when the app is backgrounded. A pending five-second SOS countdown is persisted locally; if Android suspends the JavaScript timer, the next background location event completes the SOS request using the freshest coordinates. Notification, microphone, network, wake-lock, background-location, and location foreground-service permissions are declared in `app.json`.
-
-Android does not guarantee accelerometer, gyroscope, or microphone JavaScript listeners after the app process is terminated. Those sensor listeners remain active while the app/foreground service is running; the app must not claim sensor monitoring after the user force-stops it. Background location requires a development/release build with the generated native permissions and cannot be fully validated in Expo Go. Users should also disable battery optimization for reliable behavior on vendor-customized Android devices.
-
-Trusted-contact links are served from `web-viewer/index.html` and use the `?t=<temporary-token>` format. The backend stores the token, expiry, acknowledgement timestamp, last location accuracy, and session status. Public viewers never receive user phone numbers or payment data. The viewer clearly states that it is not emergency-service dispatch; users should call local emergency services for immediate danger.
-
----
-
-## Project Structure
-
-```
-Abhaya/
-├── App.tsx                  # Root — ErrorBoundary → LocationProvider → SOSProvider
-├── app.json                 # Expo config, permissions, backend URL
-├── index.ts                 # Entry point
-├── theme.ts                 # Global design tokens
-│
-├── navigation/
-│   └── RootNavigator.tsx    # Stack + bottom tab navigation tree
-│
-├── context/
-│   ├── LocationContext.tsx  # GPS, background task, coordinates state
-│   └── SOSContext.tsx       # SOS state, countdown, keyword detection
-│
-├── screens/                 # One file per screen
-├── components/              # Shared UI components
-├── hooks/                   # Custom React hooks
-├── services/                # socket.ts, api.ts (axios wrappers)
-├── utils/                   # Pure helper functions
-├── constants/               # Config values, keyword lists, etc.
-│
-├── backend/                 # Node.js backend source
-├── web-viewer/              # Static HTML live-tracking page
-└── assets/                  # Icons, splash, images
+```text
+Expo / React Native app
+        │ HTTPS + Socket.IO
+        ▼
+Hosted Node.js API on Render ───── PostgreSQL database
+        │
+        ├── SOS and safety-session routes
+        ├── Twilio SMS integration
+        ├── Prisma migrations and purchase snapshots
+        └── Static trusted-contact viewer deployed separately
 ```
 
----
+The repository contains the mobile app, backend, database schema and migrations, and the static viewer. The mobile app defaults to the hosted API configured in `app.json`. The backend uses PostgreSQL through Prisma. The viewer uses a short-lived token and Socket.IO for live updates.
 
-## Getting Started
+## Fast path for judges: run the mobile app with the hosted backend
 
-**Prerequisites:** Node.js 18+, Expo CLI, Android Studio or Xcode.
+This is the recommended evaluation path. A judge does **not** need to run PostgreSQL, Twilio, or the backend locally.
+
+### Prerequisites
+
+Install Node.js 18 or newer, Git, and one native target:
+
+- **Android:** Android Studio, an emulator or USB-connected device, and a development build.
+- **iOS:** Xcode on macOS and an iOS simulator or device.
+
+Expo Go can preview basic screens, but it cannot validate RevenueCat purchases, background location, foreground services, or the Edge Impulse native asset flow. Use a development build for the complete demo.
+
+### Install and configure the app
 
 ```bash
-# Clone
 git clone https://github.com/Biki-dev/Abhaya.git
 cd Abhaya
-
-# Install
 npm install
-
-# Start (Expo Go or dev build)
-npm start
-
-# Android
-npm run android
-
-# iOS
-npm run ios
-```
-
-### Environment setup
-
-The frontend and backend use separate environment files. For the Expo app, copy the root template and fill in the public RevenueCat Test Store keys when testing purchases:
-
-```bash
 cp .env.example .env
 ```
 
-For the backend, copy its template and provide the PostgreSQL and Twilio values:
+The default API is already configured as:
+
+```text
+https://abhaya-backend.onrender.com
+```
+
+You only need to add the public RevenueCat Test Store keys if you want to test subscriptions. The frontend template is [`.env.example`](.env.example).
+
+### Start a basic preview
+
+```bash
+npm start
+```
+
+Use this path for navigation and non-native UI review. For the complete feature set, create a development build.
+
+### Build the complete Android app
+
+```bash
+npx expo prebuild --clean --platform android
+npx expo run:android
+```
+
+Alternatively, create an installable EAS development build:
+
+```bash
+eas build --profile development --platform android
+npx expo start --dev-client
+```
+
+After installation, grant the requested permissions. For background location, Android may require the user to enable **Allow all the time** in system settings after first granting foreground location.
+
+### Build the complete iOS app
+
+```bash
+npx expo run:ios
+```
+
+Use a development build for microphone, notifications, background location, and RevenueCat Test Store testing.
+
+## Backend deployment for maintainers
+
+The hosted Render backend must have a PostgreSQL database and the backend environment variables configured. A judge using the hosted API can skip this section.
+
+### Backend environment
+
+Copy [`backend/.env.example`](backend/.env.example) to `backend/.env` and set:
+
+| Variable | Required | Purpose |
+|---|---:|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string used by Prisma. |
+| `PORT` | No | HTTP port; defaults to `4000`. |
+| `VIEWER_URL` | No | Base URL used to generate trusted-contact links. |
+| `TWILIO_ACCOUNT_SID` | For SMS | Twilio account identifier. |
+| `TWILIO_AUTH_TOKEN` | For SMS | Twilio server credential. |
+| `TWILIO_FROM_NUMBER` | For SMS | Verified Twilio sender number. |
+| `POLICE_FALLBACK_NUMBER` | No | Fallback number in E.164 format. |
+
+Never put backend credentials in the Expo `.env` file or in the mobile bundle.
+
+### Run the backend locally
 
 ```bash
 cd backend
-cp .env.example .env
 npm install
+cp .env.example .env
 npm run prisma:generate
 npm run prisma:migrate
 npm run dev
 ```
 
-The app points to `https://abhaya-backend.onrender.com` by default (configured in `app.json → extra.apiBaseUrl`). For a local backend on a physical device, set `EXPO_PUBLIC_LAN_API_BASE_URL` in the frontend `.env` to the computer's LAN address, such as `http://192.168.1.25:4000`.
+The backend listens on `http://localhost:4000`. Verify it with:
 
-The complete variable lists are maintained separately in [frontend `.env.example`](.env.example) and [backend `.env.example](backend/.env.example). Never commit `.env` files or server credentials.
+```bash
+curl http://localhost:4000/health
+```
 
-### Permissions the app will ask for
+Expected response:
 
-| Permission | Why |
-|---|---|
-| Fine / Coarse Location | Real-time GPS for SOS alerts |
-| Background Location | Keeps tracking active when screen is off |
-| Record Audio | Keyword detection + emergency audio capture |
-| Post Notifications | SOS alerts to emergency contacts |
+```json
+{"ok":true}
+```
 
----
+### Use a local backend with a physical device
 
-## Tech Stack
+The phone cannot reach the computer through `localhost`. Find the computer's LAN address and set this in the root `.env`:
 
-| Layer | Technology |
-|---|---|
-| App framework | Expo ~54, React Native 0.81 |
-| Language | TypeScript 5.9 |
-| Navigation | React Navigation 6 (Stack + Bottom Tabs) |
-| Real-time | Socket.IO client 4.8 |
-| HTTP | Axios 1.6 |
-| Location | expo-location + expo-task-manager |
-| Audio | expo-av + react-native-audio-record |
-| Maps | react-native-maps |
-| Notifications | expo-notifications |
-| Storage | @react-native-async-storage/async-storage |
-| Fonts | @expo-google-fonts/manrope |
-| Build | EAS Build |
+```env
+EXPO_PUBLIC_LAN_API_BASE_URL=http://192.168.1.25:4000
+```
 
-## RevenueCat Test Store subscriptions
+Keep the phone and computer on the same Wi-Fi network, allow port `4000` through the local firewall, and restart Expo after changing `.env`.
 
-Abhaya includes a RevenueCat subscription flow configured for **Test Store only**. The Free plan always includes SOS, emergency calling, basic safety tracking, profile, and route check-in. Abhaya Plus unlocks unlimited emergency contacts, extended route history, and enhanced safety history. Abhaya Family includes the Plus safety features.
+## Suggested five-minute demo
+
+1. Open the app and show the home safety state and current location.
+2. Start an SOS and cancel it to demonstrate the false-alarm protection.
+3. Start it again and let the countdown finish. Show the alert result.
+4. Use the live-share action and open the generated link in a second browser window.
+5. Demonstrate the viewer's live status, location timestamp, accuracy, expiry, and acknowledgement.
+6. Start a route check-in and show the active timer.
+7. Open the subscription screen and explain which capabilities are included in Free, Plus, and Family.
+8. If testing Android native behavior, lock the screen and show the persistent safety-location notification.
+
+The viewer includes an explicit disclaimer that it is not emergency-service dispatch. For a real emergency, users must contact local emergency services.
+
+## Plans and RevenueCat Test Store
+
+Abhaya uses RevenueCat's Test Store for the submission build. RevenueCat's active entitlement state is the source of truth for client-side plan access.
 
 | Plan | Entitlement | Test products |
 |---|---|---|
+| Free | None | Included by default |
 | Abhaya Plus | `abhaya_plus` | `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test` |
 | Abhaya Family | `abhaya_family` | `abhaya_family_monthly_test`, `abhaya_family_yearly_test` |
 
-Create these products in RevenueCat's **Test Store**, attach them to the matching entitlements, and place them in the `default` offering. Set the public Test Store SDK keys in a local `.env` file using `.env.example` as a template. No production keys or real store credentials belong in this repository.
+To configure the Test Store, create the four product identifiers, attach them to the matching entitlements, and add them to the `default` offering. Put only public Test Store SDK keys in the frontend `.env`.
 
-RevenueCat uses `CustomerInfo.entitlements.active` as the source of truth for each user's plan. The app identifies the customer with the authenticated Abhaya phone number, so different users receive only the features granted to their own purchase. RevenueCat native modules require an Expo development build; Expo Go cannot run this payment integration.
+The backend stores purchase-history snapshots for audit and support. These snapshots do not grant access. Production access enforcement for backend-only premium operations should use a verified RevenueCat webhook before launch.
 
-Each startup, purchase, and restore also writes a **purchase-history snapshot** to the backend (`SubscriptionSnapshot`) for the authenticated user. It contains the Test Store marker, RevenueCat customer ID, active entitlement names, purchased product identifiers, and available RevenueCat dates. This is an audit/support record only: the client never treats the database snapshot as proof of entitlement, and no fake `isPremium` flag is stored. Apply the migration with `cd backend && npm run prisma:migrate` after setting `DATABASE_URL`.
+## Permissions and privacy
 
-The trusted-contact fields use PostgreSQL-generated defaults for `publicToken` and `expiresAt`, so a hosting provider running `prisma db push` can add them to existing `SafetySession` rows without a destructive reset. Production deployments should still prefer `cd backend && npm run prisma:migrate` to apply the checked-in migrations.
+The app requests permissions only for declared safety functions:
 
-#### Exact Test Store setup
+- **Location:** current and background safety tracking.
+- **Microphone:** voice keyword detection and emergency audio features.
+- **Notifications:** countdown, SOS, check-in, and foreground-service status.
+- **Android foreground service and wake lock:** continued location updates while the screen is off.
 
-1. In RevenueCat, create or open the project's **Test Store** and copy its public iOS and Android Test Store SDK keys into a local `.env` file. Never use secret RevenueCat API keys in the app.
-2. Create the four Test Store products with these exact identifiers: `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test`, `abhaya_family_monthly_test`, and `abhaya_family_yearly_test`. Give each product clearly marked test pricing; the suggested future INR prices in the product brief are not app charges.
-3. Create entitlements `abhaya_plus` and `abhaya_family`. Attach the two Plus products to `abhaya_plus` and the two Family products to `abhaya_family`.
-4. Create or edit the `default` offering. Add Plus monthly as `$rc_monthly`, Plus yearly as `$rc_annual`, and add the Family monthly and yearly products as custom packages (use the closest valid monthly/yearly package type if the dashboard does not allow a custom identifier). The product identifiers above must remain exact.
-5. Build the app with the development profile and test purchases in the Test Store modal. Missing keys, missing offerings, network failures, and cancelled purchases leave the account on its last known plan and never disable SOS or emergency behavior. The enhanced sensor dashboard is locked for Free users; SOS, emergency calling, basic safety tracking, and basic route check-in remain available.
+Android may stop background work after a force-stop, and device manufacturers may apply additional battery restrictions. Background location and sensor behavior must be tested in a native development or release build, not only in Expo Go.
 
-The current implementation deliberately does not add a backend premium flag or an unverified webhook. Before production, add a RevenueCat webhook endpoint with signature verification, persist server-side entitlement state keyed to the stable Abhaya user ID, and enforce server-side access for any backend-only premium operation. Replace Test Store products and keys only in a separate release configuration after Apple/Google sandbox testing.
+## Quality checks
+
+Run these checks before submitting changes:
 
 ```bash
-npx expo install react-native-purchases expo-dev-client
-eas build --profile development --platform android
-# or: eas build --profile development --platform ios
-npx expo start --dev-client
+npm run typecheck
+npm test
+cd backend && npm run build
 ```
 
-Run local checks with `npm run typecheck` and `npm test`; run `cd backend && npm run build` for the backend. RevenueCat Test Store purchases require the native development build; Expo Go can preview the screen only and must not be treated as payment validation.
-
-### Edge Impulse Android asset bundling
-
-The keyword classifier runs inside a WebView and requires `run-impulse.js`, `edge-impulse-standalone-all.js`, and `edge-impulse-standalone-all.wasm` under `file:///android_asset/ei`. The Expo config plugin `plugins/withEdgeImpulseAssets.js` copies these files automatically during `expo prebuild`, `expo run:android`, and EAS builds. After updating this fix, rebuild the native app; restarting Metro alone cannot change the already-installed APK:
+The Android Edge Impulse files are copied during native prebuild by `plugins/withEdgeImpulseAssets.js`. If the classifier reports missing Android assets, uninstall the old build and rebuild:
 
 ```bash
 npx expo prebuild --clean --platform android
 npx expo run:android
-# or: eas build --profile development --platform android
 ```
 
-If the warning persists in an existing development build, uninstall the old APK first and install the newly rebuilt one.
+## Repository layout
 
-Before production launch, replace Test Store products with real App Store/Google Play products, use platform-specific production keys, and complete platform sandbox testing. See the [RevenueCat Expo guide](https://www.revenuecat.com/docs/getting-started/installation/expo) and [sandbox guide](https://www.revenuecat.com/docs/test-and-launch/sandbox).
+```text
+App.tsx                 Expo application root
+context/                Global location and SOS providers
+screens/                App screens and user flows
+services/               API, SOS, notifications, RevenueCat, and storage logic
+backend/                Express server, Socket.IO, Prisma schema, and migrations
+web-viewer/             Static trusted-contact live-session viewer
+plugins/                Expo native asset configuration
+assets/                 Icons, model assets, and application artwork
+```
 
----
+## Submission links
+
+- **Repository:** https://github.com/Biki-dev/Abhaya
+- **Hosted API health check:** https://abhaya-backend.onrender.com/health
+- **Live viewer source:** [`web-viewer/index.html`](web-viewer/index.html)
+
+## References
+
+[1]: https://docs.expo.dev/versions/latest/sdk/location/ "Expo Location documentation"
+[2]: https://www.revenuecat.com/docs/getting-started/installation/expo "RevenueCat Expo installation guide"
+[3]: https://developer.android.com/develop/sensors-and-location/location/permissions "Android location permissions"
+[4]: https://socket.io/docs/v4/ "Socket.IO documentation"
 
 <div align="center">
-  Built by <a href="https://github.com/Biki-dev">Biki Kalita</a>
-  <br/>
-  <sub>अभया</sub>
+
+Built by [Biki Kalita](https://github.com/Biki-dev)
+
 </div>
