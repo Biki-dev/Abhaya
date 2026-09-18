@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { firePendingBackgroundSOSIfDue } from '../services/backgroundSOS';
 
 export interface Loc {
   latitude: number;
@@ -38,7 +39,9 @@ if (!TaskManager.isTaskDefined(LOCATION_TASK_NAME)) {
     if (!latest) return;
 
     try {
-      await AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(toLoc(latest)));
+      const next = toLoc(latest);
+      await AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(next));
+      await firePendingBackgroundSOSIfDue(next.latitude, next.longitude);
     } catch (storageError) {
       console.warn('[Location] Could not persist background location:', storageError);
     }

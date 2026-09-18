@@ -37,7 +37,12 @@
         "RECORD_AUDIO",
         "INTERNET",
         "ACCESS_NETWORK_STATE",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "WAKE_LOCK",
+        "VIBRATE"
       ]
     },
     "plugins": [
@@ -47,10 +52,12 @@
           "locationAlwaysAndWhenInUsePermissionAlert": "Abhaya needs access to your location for safety features.",
           "locationWhenInUsePermissionAlert": "Abhaya needs access to your location while using the app.",
           "isAndroidBackgroundLocationEnabled": true,
-          "isAndroidForegroundServiceEnabled": true
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
       ],
       "expo-asset",
+      "expo-notifications",
       "./plugins/withEdgeImpulseAssets",
       [
         "expo-build-properties",

@@ -69,6 +69,12 @@ When an SOS fires, `SOSContext` does three things in parallel:
 
 The **web-viewer** is a lightweight HTML page (no framework) that opens a token-authorized Socket.IO room, renders a map with the user's coordinates as they stream in, and lets a trusted contact acknowledge the active session.
 
+### Background safety behavior
+
+Abhaya defines a top-level Expo background-location task. After the user grants foreground and background location permission, Android runs the location foreground service and stores the latest coordinates even when the app is backgrounded. A pending five-second SOS countdown is persisted locally; if Android suspends the JavaScript timer, the next background location event completes the SOS request using the freshest coordinates. Notification, microphone, network, wake-lock, background-location, and location foreground-service permissions are declared in `app.json`.
+
+Android does not guarantee accelerometer, gyroscope, or microphone JavaScript listeners after the app process is terminated. Those sensor listeners remain active while the app/foreground service is running; the app must not claim sensor monitoring after the user force-stops it. Background location requires a development/release build with the generated native permissions and cannot be fully validated in Expo Go. Users should also disable battery optimization for reliable behavior on vendor-customized Android devices.
+
 Trusted-contact links are served from `web-viewer/index.html` and use the `?t=<temporary-token>` format. The backend stores the token, expiry, acknowledgement timestamp, last location accuracy, and session status. Public viewers never receive user phone numbers or payment data. The viewer clearly states that it is not emergency-service dispatch; users should call local emergency services for immediate danger.
 
 ---

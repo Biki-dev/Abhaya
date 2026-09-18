@@ -26,6 +26,7 @@ import {
 } from '../services/sosNotification';
 import { logSensorEvent } from '../services/sensorDb';
 import { sendPoliceSOS, PoliceSMSResult } from '../services/policeSOS';
+import { clearPendingBackgroundSOS, savePendingBackgroundSOS } from '../services/backgroundSOS';
 
 const COUNTDOWN_SECS = 5;
 
@@ -127,6 +128,8 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
   ) => {
     const { userId, userName, onResult, onLoading, onShowBanner } = optsRef.current;
 
+    await clearPendingBackgroundSOS();
+
     if (userId && loc) {
       logSensorEvent(userId, 'sos_triggered', { reason },
         loc.latitude, loc.longitude).catch(() => {});
@@ -183,6 +186,17 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
     countdownRef.current = COUNTDOWN_SECS;
     setSOSState({ visible: true, countdown: COUNTDOWN_SECS, reason });
 
+    const { userId, userName } = optsRef.current;
+    if (userId) {
+      savePendingBackgroundSOS({
+        userName,
+        userPhone: userId,
+        reason,
+        deadline: Date.now() + COUNTDOWN_SECS * 1000,
+        createdAt: Date.now(),
+      }).catch(error => console.warn('[SOS] Could not persist background countdown:', error));
+    }
+
     // If app is already in background (edge case), show notification immediately
     if (!isFgRef.current) {
       showSOSCountdownNotification(reason, COUNTDOWN_SECS);
@@ -225,6 +239,7 @@ export function useSOSWithBackground(opts: SOSHookOptions) {
     timerRef.current = null;
     activeRef.current = false;
     firedRef.current = false;
+    clearPendingBackgroundSOS().catch(() => {});
     setSOSState({ visible: false, countdown: COUNTDOWN_SECS, reason: '' });
     dismissSOSCountdownNotification();
 
