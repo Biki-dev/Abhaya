@@ -355,9 +355,6 @@ export default function SettingsScreen({ navigation }: any) {
             thumbColor={discreetMode ? colors.primaryDark : '#fff'}
           />
         </View>
-        <Text style={styles.discreetNote}>
-          Uses a neutral confirmation screen, haptic countdown feedback, and a neutral notification shade message. Android may still show system indicators or restrict background behavior.
-        </Text>
         <Text style={styles.triggerLabel}>Trigger gesture</Text>
         <View style={styles.triggerChoices}>
           <TouchableOpacity
