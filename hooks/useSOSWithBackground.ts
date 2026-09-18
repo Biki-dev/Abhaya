@@ -27,6 +27,7 @@ import { logSensorEvent } from '../services/sensorDb';
 import { sendPoliceSOS, PoliceSMSResult } from '../services/policeSOS';
 import { clearPendingBackgroundSOS, savePendingBackgroundSOS } from '../services/backgroundSOS';
 import { useDiscreetMode } from '../context/DiscreetModeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 const COUNTDOWN_SECS = 5;
 
@@ -49,7 +50,9 @@ type SOSHookOptions = {
 };
 
 export function useSOSWithBackground(opts: SOSHookOptions) {
-  const { enabled: discreetMode } = useDiscreetMode();
+  const { enabled: discreetModeSetting } = useDiscreetMode();
+  const { isPremiumActive } = useSubscription();
+  const discreetMode = discreetModeSetting && isPremiumActive;
   const [sosState, setSOSState] = useState<SOSCountdownState>({
     visible: false, countdown: COUNTDOWN_SECS, reason: '',
   });

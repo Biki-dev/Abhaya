@@ -43,6 +43,7 @@ export default function SettingsScreen({ navigation }: any) {
   const { signOut } = useAuth();
   const { isPremiumActive, plan } = useSubscription();
   const { enabled: discreetMode, triggerMode, setEnabled, setTriggerMode } = useDiscreetMode();
+  const discreetModeAvailable = isPremiumActive;
   // ── local contacts state ───────────────────────────────────────────────────
   const [contacts, setContactsState] = useState<EmergencyContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
@@ -359,7 +360,11 @@ export default function SettingsScreen({ navigation }: any) {
       </View>
 
       {/* ── Discreet Mode ── */}
-      <View style={styles.section}>
+      <TouchableOpacity
+        style={styles.section}
+        activeOpacity={discreetModeAvailable ? 1 : 0.8}
+        onPress={!discreetModeAvailable ? () => navigation.navigate('Subscription') : undefined}
+      >
         <View style={styles.discreetHeader}>
           <View style={styles.discreetIcon}>
             <Ionicons name="eye-off-outline" size={20} color={colors.primaryDark} />
@@ -369,33 +374,35 @@ export default function SettingsScreen({ navigation }: any) {
             <Text style={styles.sectionSubtitle}>A low-attention interface for situations where drawing attention may be unsafe.</Text>
           </View>
           <Switch
-            value={discreetMode}
-            onValueChange={(value) => void setEnabled(value)}
+            value={discreetModeAvailable && discreetMode}
+            onValueChange={(value) => { if (discreetModeAvailable) void setEnabled(value); }}
+            disabled={!discreetModeAvailable}
             trackColor={{ false: colors.inactive, true: colors.primaryLight }}
             thumbColor={discreetMode ? colors.primaryDark : '#fff'}
           />
         </View>
+        {!discreetModeAvailable && <View style={styles.premiumLock}><Ionicons name="lock-closed" size={13} color={colors.warning} /><Text style={styles.premiumLockText}>Premium feature · Upgrade to unlock Discreet Mode</Text><Ionicons name="chevron-forward" size={14} color={colors.warning} /></View>}
         <Text style={styles.triggerLabel}>Trigger gesture</Text>
         <View style={styles.triggerChoices}>
           <TouchableOpacity
             style={[styles.triggerChoice, triggerMode === 'hold' && styles.triggerChoiceActive]}
-            onPress={() => void setTriggerMode('hold')}
+            onPress={discreetModeAvailable ? () => void setTriggerMode('hold') : () => navigation.navigate('Subscription')}
           >
             <Ionicons name="hand-left-outline" size={18} color={triggerMode === 'hold' ? colors.primaryDark : colors.muted} />
             <Text style={[styles.triggerChoiceText, triggerMode === 'hold' && styles.triggerChoiceTextActive]}>Press and hold</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.triggerChoice, triggerMode === 'tripleTap' && styles.triggerChoiceActive]}
-            onPress={() => void setTriggerMode('tripleTap')}
+            onPress={discreetModeAvailable ? () => void setTriggerMode('tripleTap') : () => navigation.navigate('Subscription')}
           >
             <Ionicons name="finger-print-outline" size={18} color={triggerMode === 'tripleTap' ? colors.primaryDark : colors.muted} />
             <Text style={[styles.triggerChoiceText, triggerMode === 'tripleTap' && styles.triggerChoiceTextActive]}>Triple tap</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.triggerHint}>
+        <Text style={[styles.triggerHint, !discreetModeAvailable && styles.lockedText]}>
           {triggerMode === 'hold' ? 'Hold the Safety button for a moment to start the check.' : 'Tap the Safety button three times quickly to start the check.'}
         </Text>
-      </View>
+      </TouchableOpacity>
 
       {/* ── Account ── */}
       <View style={styles.section}>
@@ -479,6 +486,9 @@ const styles = StyleSheet.create({
   triggerChoiceText: { ...typography.caption, color: colors.muted, textAlign: 'center' },
   triggerChoiceTextActive: { color: colors.primaryDark, fontFamily: 'Manrope_700Bold' },
   triggerHint: { ...typography.caption, color: colors.muted, marginTop: spacing.sm },
+  premiumLock: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.warning + '12', borderRadius: borderRadius.md, padding: spacing.sm, marginBottom: spacing.md },
+  premiumLockText: { ...typography.caption, color: colors.warning, flex: 1, fontFamily: 'Manrope_600SemiBold' },
+  lockedText: { color: colors.warning },
   sectionActions:  { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 
   syncBtn: {

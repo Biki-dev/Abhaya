@@ -17,6 +17,7 @@ import PoliceAlertBanner from '../components/PoliceAlertBanner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildLeafletHTML } from '../utils/buildLeafletHTML';
 import { useDiscreetMode } from '../context/DiscreetModeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 const DEFAULT_HTML = buildLeafletHTML(26.1445, 91.7362, { showPulse: true, zoom: 16 });
 
@@ -37,7 +38,9 @@ export default function HomeMapScreen({ navigation }: any) {
     trustedContactSession,
     resolveTrustedContactSession,
   } = useSOSContextFull();
-  const { enabled: discreetMode, triggerMode } = useDiscreetMode();
+  const { enabled: discreetModeSetting, triggerMode } = useDiscreetMode();
+  const { isPremiumActive } = useSubscription();
+  const discreetMode = discreetModeSetting && isPremiumActive;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Unknown');

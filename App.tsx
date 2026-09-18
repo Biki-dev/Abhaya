@@ -13,6 +13,7 @@ import RootNavigator from './navigation/RootNavigator';
 import { LocationProvider } from './context/LocationContext';
 import { SOSProvider } from './context/SOSContext';
 import { DiscreetModeProvider } from './context/DiscreetModeContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 
 // ── Global Error Boundary ──────────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component<
@@ -87,14 +88,16 @@ function AppInner() {
           is active or whether the app is in the background.
         */}
         <DiscreetModeProvider>
-          <SOSProvider>
-            <SafeAreaProvider>
-              <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-                <RootNavigator />
-                <StatusBar style="dark" backgroundColor="#FAFBFC" />
-              </SafeAreaView>
-            </SafeAreaProvider>
-          </SOSProvider>
+          <SubscriptionProvider>
+            <SOSProvider>
+              <SafeAreaProvider>
+                <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+                  <RootNavigator />
+                  <StatusBar style="dark" backgroundColor="#FAFBFC" />
+                </SafeAreaView>
+              </SafeAreaProvider>
+            </SOSProvider>
+          </SubscriptionProvider>
         </DiscreetModeProvider>
       </LocationProvider>
     </GestureHandlerRootView>

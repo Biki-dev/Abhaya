@@ -12,7 +12,6 @@ import SettingsScreen           from '../screens/SettingsScreen';
 import ProfileScreen            from '../screens/ProfileScreen';
 import SensorDashboardScreen    from '../screens/SensorDashboardScreen';
 import SubscriptionScreen       from '../screens/SubscriptionScreen';
-import { SubscriptionProvider } from '../context/SubscriptionContext';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -47,8 +46,7 @@ function SettingsStack() {
 
 export default function AppStack() {
   return (
-    <SubscriptionProvider>
-      <Tab.Navigator
+    <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
@@ -69,7 +67,6 @@ export default function AppStack() {
           options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={22} color={color} /> }}
         />
       </Tab.Navigator>
-    </SubscriptionProvider>
   );
 }
 
