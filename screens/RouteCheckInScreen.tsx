@@ -282,10 +282,6 @@ export default function RouteCheckInScreen({ navigation }: any) {
               allowFileAccess allowUniversalAccessFromFileURLs
               scrollEnabled={false} bounces={false}
             />
-            <View style={st.mapBadge}>
-              <Ionicons name={locationGranted ? 'location' : 'location-outline'} size={13} color={locationGranted ? colors.primary : colors.muted} />
-              <Text style={st.mapBadgeText}>{locationGranted ? 'Live · OSM' : 'No location'}</Text>
-            </View>
             <TouchableOpacity style={st.recenterMapBtn} onPress={() => {
               if (!userLocation) return;
               postMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude, zoom: 15 });
