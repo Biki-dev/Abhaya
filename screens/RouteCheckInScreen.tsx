@@ -429,13 +429,6 @@ export default function RouteCheckInScreen({ navigation }: any) {
               <Ionicons name="play-circle" size={18} color="#fff" />
               <Text style={st.startBtnText}>Start Check-In</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={st.recenterBtn} onPress={() => {
-              if (!userLocation) return;
-              postMap({ type: 'center', lat: userLocation.latitude, lng: userLocation.longitude, zoom: 15 });
-            }}>
-              <Ionicons name="locate-outline" size={17} color={colors.text} />
-              <Text style={st.recenterBtnText}>Recenter Map</Text>
-            </TouchableOpacity>
           </View>
         </>
       ) : (
