@@ -21,20 +21,6 @@ Abhaya is designed for the moment when opening an app is already too difficult. 
 
 The viewer is a secure, temporary web page. A trusted contact can open it without installing the app and see the session status, latest location, timestamp, accuracy, expiry, and acknowledgement control. It does not expose the user's phone number or subscription data.
 
-## Key features
-
-| Capability | What the judge can test |
-|---|---|
-| SOS countdown | Start an SOS from the home screen and cancel it during the countdown. |
-| Emergency alert flow | Let the countdown finish and inspect the result banner and server response. SMS delivery requires configured Twilio credentials. |
-| Live location | View the current location on the map and start a temporary safety session. |
-| Trusted-contact viewer | Open the generated link in a browser, watch location updates, and acknowledge the session. |
-| Voice keyword flow | Use the configured keyword in a native development build with microphone permission. |
-| Background location | On Android, grant background location and test the foreground location service with the screen off. |
-| Route check-in | Start a route check-in, review the timer, and complete or cancel it. |
-| Sensor safety dashboard | Review motion, GPS, and microphone state. Enhanced features are plan-gated. |
-| RevenueCat Test Store | Review Free, Plus, and Family plan access in a native development build. |
-
 ## Architecture
 
 ```text
@@ -61,16 +47,13 @@ The existing project flowchart below shows how a safety event moves from the dev
 
 The mobile app remains responsible for user consent, countdown control, and plan-aware UI. The backend stores safety sessions and purchase-history snapshots, while RevenueCat remains the authority for client-side subscription entitlements. The public viewer receives only the temporary session data required to follow the active safety event.
 
-## Fast path for judges: run the mobile app with the hosted backend
-
-This is the recommended evaluation path. A judge does **not** need to run PostgreSQL, Twilio, or the backend locally.
+## Run the mobile app with the hosted backend
 
 ### Prerequisites
 
 Install Node.js 18 or newer, Git, and one native target:
 
 - **Android:** Android Studio, an emulator or USB-connected device, and a development build.
-- **iOS:** Xcode on macOS and an iOS simulator or device.
 
 Expo Go can preview basic screens, but it cannot validate RevenueCat purchases, background location, foreground services, or the Edge Impulse native asset flow. Use a development build for the complete demo.
 
@@ -114,12 +97,6 @@ npx expo start --dev-client
 ```
 
 After installation, grant the requested permissions. For background location, Android may require the user to enable **Allow all the time** in system settings after first granting foreground location.
-
-### Build the complete iOS app
-
-```bash
-npx expo run:ios
-```
 
 Use a development build for microphone, notifications, background location, and RevenueCat Test Store testing.
 
@@ -176,32 +153,6 @@ EXPO_PUBLIC_LAN_API_BASE_URL=http://192.168.1.25:4000
 
 Keep the phone and computer on the same Wi-Fi network, allow port `4000` through the local firewall, and restart Expo after changing `.env`.
 
-## Suggested five-minute demo
-
-1. Open the app and show the home safety state and current location.
-2. Start an SOS and cancel it to demonstrate the false-alarm protection.
-3. Start it again and let the countdown finish. Show the alert result.
-4. Use the live-share action and open the generated link in a second browser window.
-5. Demonstrate the viewer's live status, location timestamp, accuracy, expiry, and acknowledgement.
-6. Start a route check-in and show the active timer.
-7. Open the subscription screen and explain which capabilities are included in Free, Plus, and Family.
-8. If testing Android native behavior, lock the screen and show the persistent safety-location notification.
-
-The viewer includes an explicit disclaimer that it is not emergency-service dispatch. For a real emergency, users must contact local emergency services.
-
-## Plans and RevenueCat Test Store
-
-Abhaya uses RevenueCat's Test Store for the submission build. RevenueCat's active entitlement state is the source of truth for client-side plan access.
-
-| Plan | Entitlement | Test products |
-|---|---|---|
-| Free | None | Included by default |
-| Abhaya Plus | `abhaya_plus` | `abhaya_plus_monthly_test`, `abhaya_plus_yearly_test` |
-| Abhaya Family | `abhaya_family` | `abhaya_family_monthly_test`, `abhaya_family_yearly_test` |
-
-To configure the Test Store, create the four product identifiers, attach them to the matching entitlements, and add them to the `default` offering. Put only public Test Store SDK keys in the frontend `.env`.
-
-The backend stores purchase-history snapshots for audit and support. These snapshots do not grant access. Production access enforcement for backend-only premium operations should use a verified RevenueCat webhook before launch.
 
 ## Permissions and privacy
 
@@ -243,19 +194,6 @@ web-viewer/             Static trusted-contact live-session viewer
 plugins/                Expo native asset configuration
 assets/                 Icons, model assets, and application artwork
 ```
-
-## Submission links
-
-- **Repository:** https://github.com/Biki-dev/Abhaya
-- **Hosted API health check:** https://abhaya-backend.onrender.com/health
-- **Live viewer source:** [`web-viewer/index.html`](web-viewer/index.html)
-
-## References
-
-[1]: https://docs.expo.dev/versions/latest/sdk/location/ "Expo Location documentation"
-[2]: https://www.revenuecat.com/docs/getting-started/installation/expo "RevenueCat Expo installation guide"
-[3]: https://developer.android.com/develop/sensors-and-location/location/permissions "Android location permissions"
-[4]: https://socket.io/docs/v4/ "Socket.IO documentation"
 
 <div align="center">
 
